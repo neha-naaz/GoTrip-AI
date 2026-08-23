@@ -1,0 +1,2 @@
+-- V1 baseline: schema ownership via Flyway
+-- Domain tables will be added in later migrations
