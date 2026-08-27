@@ -3,8 +3,10 @@ package com.tripflow.auth.service;
 import com.tripflow.agency.entity.AgencyProfile;
 import com.tripflow.agency.repository.AgencyProfileRepository;
 import com.tripflow.auth.dto.AuthResponse;
+import com.tripflow.auth.dto.LoginRequest;
 import com.tripflow.auth.dto.RegisterRequest;
 import com.tripflow.auth.security.JwtService;
+import com.tripflow.common.exception.AccountNotActiveException;
 import com.tripflow.common.exception.EmailAlreadyExistsException;
 import com.tripflow.common.exception.InvalidRegistrationException;
 import com.tripflow.user.entity.User;
@@ -12,6 +14,9 @@ import com.tripflow.user.entity.UserRole;
 import com.tripflow.user.entity.UserStatus;
 import com.tripflow.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +30,7 @@ public class AuthService {
     private final AgencyProfileRepository agencyProfileRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final AuthenticationManager authenticationManager;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -52,6 +58,24 @@ public class AuthService {
             agencyProfile.setUserId(user.getId());
             agencyProfile.setAgencyName(agencyName);
             agencyProfileRepository.save(agencyProfile);
+        }
+
+        String token = jwtService.generateToken(user);
+        return new AuthResponse(token, "Bearer", user.getId(), user.getEmail(), user.getRole().name());
+    }
+
+    public AuthResponse login(LoginRequest request) {
+        String email = request.email().trim().toLowerCase();
+
+        authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(email, request.password())
+        );
+
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new AccountNotActiveException("User is not active");
         }
 
         String token = jwtService.generateToken(user);

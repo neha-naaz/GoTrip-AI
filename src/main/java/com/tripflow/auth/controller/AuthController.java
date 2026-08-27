@@ -1,6 +1,7 @@
 package com.tripflow.auth.controller;
 
 import com.tripflow.auth.dto.AuthResponse;
+import com.tripflow.auth.dto.LoginRequest;
 import com.tripflow.auth.dto.RegisterRequest;
 import com.tripflow.auth.service.AuthService;
 import jakarta.validation.Valid;
@@ -23,5 +24,10 @@ public class AuthController {
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {
         AuthResponse response = authService.register(registerRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        return ResponseEntity.ok(authService.login(request));
     }
 }
