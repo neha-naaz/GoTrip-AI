@@ -7,8 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface TripRepository extends JpaRepository<Trip, Long> {
 
-    List<Trip> findByAgencyId(Long agencyId);
+    List<Trip> findByAgencyIdOrderByCreatedAtDesc(Long agencyId);
 
     List<Trip> findByStatusOrderByStartDateAsc(TripStatus status);
-
 }

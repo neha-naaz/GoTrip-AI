@@ -1,8 +1,15 @@
 package com.tripflow.common.exception;
 
+import com.tripflow.trip.exception.AgencyNotVerifiedException;
+import com.tripflow.trip.exception.AgencyProfileNotFoundException;
+import com.tripflow.trip.exception.ForbiddenException;
+import com.tripflow.trip.exception.InvalidTripStateException;
+import com.tripflow.trip.exception.TripNotFoundException;
+import com.tripflow.trip.exception.TripRulesInvalidException;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -52,5 +59,41 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleUsernameNotFound(UsernameNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ProblemDetail> handleForbidden(ForbiddenException exception) {
+        return problem(HttpStatus.FORBIDDEN, "Forbidden", exception.getMessage());
+    }
+
+    @ExceptionHandler(AgencyNotVerifiedException.class)
+    public ResponseEntity<ProblemDetail> handleAgencyNotVerified(AgencyNotVerifiedException exception) {
+        return problem(HttpStatus.FORBIDDEN, "Agency not verified", exception.getMessage());
+    }
+
+    @ExceptionHandler(AgencyProfileNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleAgencyProfileNotFound(AgencyProfileNotFoundException exception) {
+        return problem(HttpStatus.NOT_FOUND, "Agency profile not found", exception.getMessage());
+    }
+
+    @ExceptionHandler(TripNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleTripNotFound(TripNotFoundException exception) {
+        return problem(HttpStatus.NOT_FOUND, "Trip not found", exception.getMessage());
+    }
+
+    @ExceptionHandler(InvalidTripStateException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidTripState(InvalidTripStateException exception) {
+        return problem(HttpStatus.CONFLICT, "Invalid trip state", exception.getMessage());
+    }
+
+    @ExceptionHandler(TripRulesInvalidException.class)
+    public ResponseEntity<ProblemDetail> handleBusinessRule(TripRulesInvalidException exception) {
+        return problem(HttpStatus.UNPROCESSABLE_ENTITY, "Business rule violation", exception.getMessage());
+    }
+
+    private ResponseEntity<ProblemDetail> problem(HttpStatus status, String title, String detail) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(status, detail);
+        problemDetail.setTitle(title);
+        return ResponseEntity.status(status).body(problemDetail);
     }
 }
