@@ -79,6 +79,44 @@ public class TripService {
         return TripResponse.from(tripRepository.save(trip));
     }
 
+    @Transactional(readOnly = true)
+    public List<TripResponse> listPublished() {
+        return TripResponse.from(tripRepository.findByStatusOrderByStartDateAsc(TripStatus.PUBLISHED));
+    }
+
+    @Transactional(readOnly = true)
+    public List<TripResponse> searchPublished(String source, String destination) {
+        boolean hasSource = StringUtils.hasText(source);
+        boolean hasDestination = StringUtils.hasText(destination);
+
+        if (!hasSource && !hasDestination) {
+            return listPublished();
+        }
+
+        if (hasSource && hasDestination) {
+            return TripResponse.from(
+                    tripRepository.findByStatusAndSourceIgnoreCaseAndDestinationIgnoreCaseOrderByStartDateAsc(
+                            TripStatus.PUBLISHED, source.trim(), destination.trim()));
+        }
+
+        if (hasSource) {
+            return TripResponse.from(
+                    tripRepository.findByStatusAndSourceIgnoreCaseOrderByStartDateAsc(
+                            TripStatus.PUBLISHED, source.trim()));
+        }
+
+        return TripResponse.from(
+                tripRepository.findByStatusAndDestinationIgnoreCaseOrderByStartDateAsc(
+                        TripStatus.PUBLISHED, destination.trim()));
+    }
+
+    @Transactional(readOnly = true)
+    public TripResponse getPublishedById(Long tripId) {
+        return tripRepository.findByIdAndStatus(tripId, TripStatus.PUBLISHED)
+                .map(TripResponse::from)
+                .orElseThrow(() -> new TripNotFoundException(tripId));
+    }
+
     private void applyWritableFields(Trip trip, TripWritable request) {
         trip.setTitle(request.getTitle().trim());
         trip.setDescription(normalizeDescription(request.getDescription()));
@@ -107,8 +145,8 @@ public class TripService {
     }
 
     /**
-     * Returns the trip only if it belongs to the agency.
-     * Uses 404 for both missing and foreign trips to avoid leaking existence (IDOR-safe).
+     * Returns the trip only if it belongs to the agency. Uses 404 for both missing and foreign trips to avoid leaking
+     * existence (IDOR-safe).
      */
     private Trip requireOwnedTrip(Long tripId, Long agencyId) {
         return tripRepository.findById(tripId)
