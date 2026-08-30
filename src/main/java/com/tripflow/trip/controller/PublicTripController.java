@@ -1,6 +1,8 @@
 package com.tripflow.trip.controller;
 
+import com.tripflow.trip.dto.TripDetailResponse;
 import com.tripflow.trip.dto.TripResponse;
+import com.tripflow.trip.service.TripContentService;
 import com.tripflow.trip.service.TripService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -17,11 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class PublicTripController {
 
     private final TripService tripService;
+    private final TripContentService tripContentService;
 
-    /**
-     * Public catalog: PUBLISHED trips only.
-     * Optional filters: source, destination (case-insensitive).
-     */
     @GetMapping
     public ResponseEntity<List<TripResponse>> listPublished(
             @RequestParam(required = false) String source,
@@ -29,11 +28,8 @@ public class PublicTripController {
         return ResponseEntity.ok(tripService.searchPublished(source, destination));
     }
 
-    /**
-     * Public detail: returns 404 for missing or non-published trips.
-     */
     @GetMapping("/{tripId}")
-    public ResponseEntity<TripResponse> getPublished(@PathVariable Long tripId) {
-        return ResponseEntity.ok(tripService.getPublishedById(tripId));
+    public ResponseEntity<TripDetailResponse> getPublishedDetail(@PathVariable Long tripId) {
+        return ResponseEntity.ok(tripContentService.getPublishedDetail(tripId));
     }
 }

@@ -8,10 +8,21 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "trip_exclusions")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class TripExclusion {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -19,7 +30,7 @@ public class TripExclusion {
     @Column(name = "trip_id", nullable = false)
     private Long tripId;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(nullable = false, length = 500)
     private String description;
 
     @Column(name = "created_at", nullable = false)

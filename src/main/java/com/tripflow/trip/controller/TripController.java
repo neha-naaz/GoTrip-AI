@@ -27,25 +27,29 @@ public class TripController {
     private final TripService tripService;
 
     @PostMapping
-    public ResponseEntity<TripResponse> createDraft(@AuthenticationPrincipal UserDetails principal,
+    public ResponseEntity<TripResponse> createDraft(
+            @AuthenticationPrincipal UserDetails principal,
             @Valid @RequestBody CreateTripRequest request) {
-        TripResponse response = tripService.createDraft(principal.getUsername(), request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(tripService.createDraft(principal.getUsername(), request));
     }
 
     @GetMapping
     public ResponseEntity<List<TripResponse>> listMyTrips(@AuthenticationPrincipal UserDetails principal) {
-        return ResponseEntity.ok(tripService.listMyTrips(principal.getUsername()));
+        return ResponseEntity.ok(tripService.listAgencyTrips(principal.getUsername()));
     }
 
     @PutMapping("/{tripId}")
-    public ResponseEntity<TripResponse> updateDraft(@AuthenticationPrincipal UserDetails principal,
-            @PathVariable Long tripId, @Valid @RequestBody UpdateTripRequest request) {
+    public ResponseEntity<TripResponse> updateDraft(
+            @AuthenticationPrincipal UserDetails principal,
+            @PathVariable Long tripId,
+            @Valid @RequestBody UpdateTripRequest request) {
         return ResponseEntity.ok(tripService.updateDraft(principal.getUsername(), tripId, request));
     }
 
     @PostMapping("/{tripId}/publish")
-    public ResponseEntity<TripResponse> publish(@AuthenticationPrincipal UserDetails principal,
+    public ResponseEntity<TripResponse> publish(
+            @AuthenticationPrincipal UserDetails principal,
             @PathVariable Long tripId) {
         return ResponseEntity.ok(tripService.publish(principal.getUsername(), tripId));
     }

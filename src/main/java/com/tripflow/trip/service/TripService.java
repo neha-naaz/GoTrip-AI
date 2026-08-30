@@ -50,12 +50,6 @@ public class TripService {
         return TripResponse.from(tripRepository.save(trip));
     }
 
-    @Transactional(readOnly = true)
-    public List<TripResponse> listMyTrips(String userEmail) {
-        AgencyProfile agency = requireAgencyProfile(userEmail);
-        return TripResponse.from(tripRepository.findByAgencyIdOrderByCreatedAtDesc(agency.getId()));
-    }
-
     @Transactional
     public TripResponse updateDraft(String userEmail, Long tripId, UpdateTripRequest request) {
         AgencyProfile agency = requireAgencyProfile(userEmail);
@@ -80,7 +74,13 @@ public class TripService {
     }
 
     @Transactional(readOnly = true)
-    public List<TripResponse> listPublished() {
+    public List<TripResponse> listAgencyTrips(String userEmail) {
+        AgencyProfile agency = requireAgencyProfile(userEmail);
+        return TripResponse.from(tripRepository.findByAgencyIdOrderByCreatedAtDesc(agency.getId()));
+    }
+
+    @Transactional(readOnly = true)
+    public List<TripResponse> listAllPublishedTrips() {
         return TripResponse.from(tripRepository.findByStatusOrderByStartDateAsc(TripStatus.PUBLISHED));
     }
 
@@ -90,7 +90,7 @@ public class TripService {
         boolean hasDestination = StringUtils.hasText(destination);
 
         if (!hasSource && !hasDestination) {
-            return listPublished();
+            return listAllPublishedTrips();
         }
 
         if (hasSource && hasDestination) {
@@ -108,13 +108,6 @@ public class TripService {
         return TripResponse.from(
                 tripRepository.findByStatusAndDestinationIgnoreCaseOrderByStartDateAsc(
                         TripStatus.PUBLISHED, destination.trim()));
-    }
-
-    @Transactional(readOnly = true)
-    public TripResponse getPublishedById(Long tripId) {
-        return tripRepository.findByIdAndStatus(tripId, TripStatus.PUBLISHED)
-                .map(TripResponse::from)
-                .orElseThrow(() -> new TripNotFoundException(tripId));
     }
 
     private void applyWritableFields(Trip trip, TripWritable request) {

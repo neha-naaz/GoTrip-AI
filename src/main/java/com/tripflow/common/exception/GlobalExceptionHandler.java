@@ -2,6 +2,7 @@ package com.tripflow.common.exception;
 
 import com.tripflow.trip.exception.AgencyNotVerifiedException;
 import com.tripflow.trip.exception.AgencyProfileNotFoundException;
+import com.tripflow.trip.exception.DuplicateItineraryDayException;
 import com.tripflow.trip.exception.ForbiddenException;
 import com.tripflow.trip.exception.InvalidTripStateException;
 import com.tripflow.trip.exception.TripNotFoundException;
@@ -84,6 +85,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidTripStateException.class)
     public ResponseEntity<ProblemDetail> handleInvalidTripState(InvalidTripStateException exception) {
         return problem(HttpStatus.CONFLICT, "Invalid trip state", exception.getMessage());
+    }
+
+    @ExceptionHandler(DuplicateItineraryDayException.class)
+    public ResponseEntity<ProblemDetail> handleDuplicateItineraryDay(DuplicateItineraryDayException exception) {
+        return problem(HttpStatus.CONFLICT, "Duplicate itinerary day", exception.getMessage());
     }
 
     @ExceptionHandler(TripRulesInvalidException.class)
