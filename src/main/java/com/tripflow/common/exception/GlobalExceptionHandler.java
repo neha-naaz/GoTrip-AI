@@ -1,10 +1,13 @@
 package com.tripflow.common.exception;
 
+import com.tripflow.booking.exception.BookingNotAllowedException;
+import com.tripflow.booking.exception.TripFullException;
 import com.tripflow.trip.exception.AgencyNotVerifiedException;
 import com.tripflow.trip.exception.AgencyProfileNotFoundException;
 import com.tripflow.trip.exception.DuplicateItineraryDayException;
 import com.tripflow.trip.exception.ForbiddenException;
 import com.tripflow.trip.exception.InvalidTripStateException;
+import com.tripflow.trip.exception.TripDeletionNotAllowedException;
 import com.tripflow.trip.exception.TripNotFoundException;
 import com.tripflow.trip.exception.TripRulesInvalidException;
 import java.util.HashMap;
@@ -95,6 +98,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(TripRulesInvalidException.class)
     public ResponseEntity<ProblemDetail> handleBusinessRule(TripRulesInvalidException exception) {
         return problem(HttpStatus.UNPROCESSABLE_ENTITY, "Business rule violation", exception.getMessage());
+    }
+
+    @ExceptionHandler(TripDeletionNotAllowedException.class)
+    public ResponseEntity<ProblemDetail> handleTripDeletionNotAllowed(TripDeletionNotAllowedException exception) {
+        return problem(HttpStatus.CONFLICT, "Trip deletion not allowed", exception.getMessage());
+    }
+
+    @ExceptionHandler(TripFullException.class)
+    public ResponseEntity<ProblemDetail> handleTripFull(TripFullException exception) {
+        return problem(HttpStatus.CONFLICT, "Trip full", exception.getMessage());
+    }
+
+    @ExceptionHandler(BookingNotAllowedException.class)
+    public ResponseEntity<ProblemDetail> handleBookingNotAllowed(BookingNotAllowedException exception) {
+        return problem(HttpStatus.CONFLICT, "Booking not allowed", exception.getMessage());
     }
 
     private ResponseEntity<ProblemDetail> problem(HttpStatus status, String title, String detail) {

@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,6 +36,9 @@ public class Booking {
 
     @Column(name = "user_id", nullable = false)
     private Long userId;
+
+    @Column(name = "amount_due", nullable = false)
+    private BigDecimal amountDue;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

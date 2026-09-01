@@ -3,6 +3,7 @@ package com.tripflow.trip.service;
 import com.tripflow.agency.entity.AgencyProfile;
 import com.tripflow.agency.entity.VerificationStatus;
 import com.tripflow.agency.repository.AgencyProfileRepository;
+import com.tripflow.booking.repository.BookingRepository;
 import com.tripflow.trip.dto.CreateTripRequest;
 import com.tripflow.trip.dto.TripResponse;
 import com.tripflow.trip.dto.TripWritable;
@@ -12,6 +13,7 @@ import com.tripflow.trip.entity.TripStatus;
 import com.tripflow.trip.exception.AgencyNotVerifiedException;
 import com.tripflow.trip.exception.AgencyProfileNotFoundException;
 import com.tripflow.trip.exception.ForbiddenException;
+import com.tripflow.trip.exception.TripDeletionNotAllowedException;
 import com.tripflow.trip.exception.TripNotFoundException;
 import com.tripflow.trip.repository.TripRepository;
 import com.tripflow.trip.validation.TripStateValidator;
@@ -33,6 +35,7 @@ public class TripService {
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
     private final AgencyProfileRepository agencyProfileRepository;
+    private final BookingRepository bookingRepository;
     private final TripWriteValidator tripWriteValidator;
     private final TripStateValidator tripStateValidator;
 
@@ -41,10 +44,7 @@ public class TripService {
         AgencyProfile agency = requireAgencyProfile(userEmail);
         tripWriteValidator.validate(request);
 
-        Trip trip = Trip.builder()
-                .agencyId(agency.getId())
-                .status(TripStatus.DRAFT)
-                .build();
+        Trip trip = Trip.builder().agencyId(agency.getId()).status(TripStatus.DRAFT).build();
         applyWritableFields(trip, request);
 
         return TripResponse.from(tripRepository.save(trip));
@@ -55,10 +55,27 @@ public class TripService {
         AgencyProfile agency = requireAgencyProfile(userEmail);
         Trip trip = requireOwnedTrip(tripId, agency.getId());
         tripStateValidator.requireDraft(trip, "updated");
-        tripWriteValidator.validate(request);
 
-        applyWritableFields(trip, request);
+        applyPartialFields(trip, request);
+        tripWriteValidator.validateTrip(trip);
         return TripResponse.from(tripRepository.save(trip));
+    }
+
+    @Transactional
+    public void deleteTrip(String userEmail, Long tripId) {
+        AgencyProfile agency = requireAgencyProfile(userEmail);
+        Trip trip = requireOwnedTrip(tripId, agency.getId());
+
+        if (trip.getStatus() == TripStatus.PUBLISHED) {
+            if (bookingRepository.countByTripId(tripId) > 0) {
+                throw new TripDeletionNotAllowedException("Cannot delete a published trip that has bookings");
+            }
+        } else if (trip.getStatus() != TripStatus.DRAFT) {
+            throw new TripDeletionNotAllowedException(
+                    "Only draft or unpublished published trips without bookings can be deleted");
+        }
+
+        tripRepository.delete(trip);
     }
 
     @Transactional
@@ -101,13 +118,13 @@ public class TripService {
 
         if (hasSource) {
             return TripResponse.from(
-                    tripRepository.findByStatusAndSourceIgnoreCaseOrderByStartDateAsc(
-                            TripStatus.PUBLISHED, source.trim()));
+                    tripRepository.findByStatusAndSourceIgnoreCaseOrderByStartDateAsc(TripStatus.PUBLISHED,
+                            source.trim()));
         }
 
         return TripResponse.from(
-                tripRepository.findByStatusAndDestinationIgnoreCaseOrderByStartDateAsc(
-                        TripStatus.PUBLISHED, destination.trim()));
+                tripRepository.findByStatusAndDestinationIgnoreCaseOrderByStartDateAsc(TripStatus.PUBLISHED,
+                        destination.trim()));
     }
 
     private void applyWritableFields(Trip trip, TripWritable request) {
@@ -120,6 +137,36 @@ public class TripService {
         trip.setPrice(request.getPrice());
         trip.setBookingAmount(request.getBookingAmount());
         trip.setCapacity(request.getCapacity());
+    }
+
+    private void applyPartialFields(Trip trip, UpdateTripRequest request) {
+        if (StringUtils.hasText(request.getTitle())) {
+            trip.setTitle(request.getTitle().trim());
+        }
+        if (request.getDescription() != null) {
+            trip.setDescription(normalizeDescription(request.getDescription()));
+        }
+        if (StringUtils.hasText(request.getSource())) {
+            trip.setSource(request.getSource().trim());
+        }
+        if (StringUtils.hasText(request.getDestination())) {
+            trip.setDestination(request.getDestination().trim());
+        }
+        if (request.getStartDate() != null) {
+            trip.setStartDate(request.getStartDate());
+        }
+        if (request.getEndDate() != null) {
+            trip.setEndDate(request.getEndDate());
+        }
+        if (request.getPrice() != null) {
+            trip.setPrice(request.getPrice());
+        }
+        if (request.getBookingAmount() != null) {
+            trip.setBookingAmount(request.getBookingAmount());
+        }
+        if (request.getCapacity() != null) {
+            trip.setCapacity(request.getCapacity());
+        }
     }
 
     private String normalizeDescription(String description) {
@@ -142,8 +189,7 @@ public class TripService {
      * existence (IDOR-safe).
      */
     private Trip requireOwnedTrip(Long tripId, Long agencyId) {
-        return tripRepository.findById(tripId)
-                .filter(trip -> Objects.equals(trip.getAgencyId(), agencyId))
+        return tripRepository.findById(tripId).filter(trip -> Objects.equals(trip.getAgencyId(), agencyId))
                 .orElseThrow(() -> new TripNotFoundException(tripId));
     }
 
