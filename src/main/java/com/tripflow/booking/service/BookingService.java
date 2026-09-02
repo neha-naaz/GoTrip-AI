@@ -37,7 +37,7 @@ public class BookingService {
                 .orElseThrow(() -> new ForbiddenException("Only customers can book trips"));
 
         Long tripId = request.getTripId();
-        Trip trip = tripRepository.findByIdAndStatus(tripId, TripStatus.PUBLISHED)
+        Trip trip = tripRepository.findByIdAndStatusForUpdate(tripId, TripStatus.PUBLISHED)
                 .orElseThrow(() -> new TripNotFoundException(tripId));
 
         if (bookingRepository.existsByTripIdAndUserIdAndStatusIn(tripId, user.getId(), RESERVED_STATUSES)) {

@@ -1,7 +1,9 @@
 package com.tripflow.common.exception;
 
 import com.tripflow.booking.exception.BookingNotAllowedException;
+import com.tripflow.booking.exception.BookingNotFoundException;
 import com.tripflow.booking.exception.TripFullException;
+import com.tripflow.payment.exception.PaymentNotAllowedException;
 import com.tripflow.trip.exception.AgencyNotVerifiedException;
 import com.tripflow.trip.exception.AgencyProfileNotFoundException;
 import com.tripflow.trip.exception.DuplicateItineraryDayException;
@@ -113,6 +115,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BookingNotAllowedException.class)
     public ResponseEntity<ProblemDetail> handleBookingNotAllowed(BookingNotAllowedException exception) {
         return problem(HttpStatus.CONFLICT, "Booking not allowed", exception.getMessage());
+    }
+
+    @ExceptionHandler(BookingNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleBookingNotFound(BookingNotFoundException exception) {
+        return problem(HttpStatus.NOT_FOUND, "Booking not found", exception.getMessage());
+    }
+
+    @ExceptionHandler(PaymentNotAllowedException.class)
+    public ResponseEntity<ProblemDetail> handlePaymentNotAllowed(PaymentNotAllowedException exception) {
+        return problem(HttpStatus.CONFLICT, "Payment not allowed", exception.getMessage());
     }
 
     private ResponseEntity<ProblemDetail> problem(HttpStatus status, String title, String detail) {
