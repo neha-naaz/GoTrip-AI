@@ -4,6 +4,7 @@ import com.tripflow.booking.entity.Booking;
 import com.tripflow.booking.entity.BookingStatus;
 import com.tripflow.booking.exception.BookingNotFoundException;
 import com.tripflow.booking.repository.BookingRepository;
+import com.tripflow.group.service.GroupMembershipService;
 import com.tripflow.payment.dto.PaymentResponse;
 import com.tripflow.payment.entity.Payment;
 import com.tripflow.payment.entity.PaymentStatus;
@@ -29,6 +30,7 @@ public class PaymentService {
     private final BookingRepository bookingRepository;
     private final PaymentRepository paymentRepository;
     private final PaymentProvider paymentProvider;
+    private final GroupMembershipService groupMembershipService;
 
     /**
      * Starts a payment attempt. Booking stays PENDING_PAYMENT until webhook confirms SUCCESS.
@@ -106,6 +108,7 @@ public class PaymentService {
         if (booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
             booking.setStatus(BookingStatus.CONFIRMED);
             bookingRepository.save(booking);
+            groupMembershipService.onBookingConfirmed(booking);
         }
     }
 }

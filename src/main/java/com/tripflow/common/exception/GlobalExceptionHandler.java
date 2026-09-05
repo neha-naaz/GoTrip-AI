@@ -3,6 +3,7 @@ package com.tripflow.common.exception;
 import com.tripflow.booking.exception.BookingNotAllowedException;
 import com.tripflow.booking.exception.BookingNotFoundException;
 import com.tripflow.booking.exception.TripFullException;
+import com.tripflow.group.exception.TripGroupNotFoundException;
 import com.tripflow.payment.exception.PaymentNotAllowedException;
 import com.tripflow.payment.exception.PaymentNotFoundException;
 import com.tripflow.payment.exception.WebhookUnauthorizedException;
@@ -137,6 +138,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(WebhookUnauthorizedException.class)
     public ResponseEntity<ProblemDetail> handleWebhookUnauthorized(WebhookUnauthorizedException exception) {
         return problem(HttpStatus.UNAUTHORIZED, "Webhook unauthorized", exception.getMessage());
+    }
+
+    @ExceptionHandler(TripGroupNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleTripGroupNotFound(TripGroupNotFoundException exception) {
+        return problem(HttpStatus.NOT_FOUND, "Trip group not found", exception.getMessage());
     }
 
     private ResponseEntity<ProblemDetail> problem(HttpStatus status, String title, String detail) {

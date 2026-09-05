@@ -11,6 +11,7 @@ import com.tripflow.booking.entity.Booking;
 import com.tripflow.booking.entity.BookingStatus;
 import com.tripflow.booking.exception.BookingNotFoundException;
 import com.tripflow.booking.repository.BookingRepository;
+import com.tripflow.group.service.GroupMembershipService;
 import com.tripflow.payment.dto.PaymentResponse;
 import com.tripflow.payment.entity.Payment;
 import com.tripflow.payment.entity.PaymentStatus;
@@ -41,6 +42,8 @@ class PaymentServiceTest {
     private BookingRepository bookingRepository;
     @Mock
     private PaymentRepository paymentRepository;
+    @Mock
+    private GroupMembershipService groupMembershipService;
 
     private PaymentService paymentService;
 
@@ -48,7 +51,7 @@ class PaymentServiceTest {
     void setUp() {
         PaymentProvider paymentProvider = new MockPaymentProvider();
         paymentService = new PaymentService(
-                userRepository, bookingRepository, paymentRepository, paymentProvider);
+                userRepository, bookingRepository, paymentRepository, paymentProvider, groupMembershipService);
     }
 
     private static User customer(Long id, String email) {
