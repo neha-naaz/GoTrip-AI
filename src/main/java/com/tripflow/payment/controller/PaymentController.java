@@ -23,7 +23,7 @@ public class PaymentController {
     @PostMapping("/{bookingId}/pay")
     public ResponseEntity<PaymentResponse> pay(@AuthenticationPrincipal UserDetails principal,
             @PathVariable Long bookingId) {
-        return ResponseEntity.ok(paymentService.payForBooking(principal.getUsername(), bookingId));
+        return ResponseEntity.ok(paymentService.initiatePayment(principal.getUsername(), bookingId));
     }
 
     @GetMapping("/{bookingId}/payments")

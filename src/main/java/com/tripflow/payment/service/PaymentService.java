@@ -8,6 +8,7 @@ import com.tripflow.payment.dto.PaymentResponse;
 import com.tripflow.payment.entity.Payment;
 import com.tripflow.payment.entity.PaymentStatus;
 import com.tripflow.payment.exception.PaymentNotAllowedException;
+import com.tripflow.payment.exception.PaymentNotFoundException;
 import com.tripflow.payment.provider.PaymentProvider;
 import com.tripflow.payment.repository.PaymentRepository;
 import com.tripflow.trip.exception.ForbiddenException;
@@ -29,8 +30,11 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final PaymentProvider paymentProvider;
 
+    /**
+     * Starts a payment attempt. Booking stays PENDING_PAYMENT until webhook confirms SUCCESS.
+     */
     @Transactional
-    public PaymentResponse payForBooking(String userEmail, Long bookingId) {
+    public PaymentResponse initiatePayment(String userEmail, Long bookingId) {
         User user = userRepository.findByEmailAndRole(userEmail, UserRole.CUSTOMER)
                 .orElseThrow(() -> new ForbiddenException("Only customers can make payments"));
 
@@ -54,18 +58,6 @@ public class PaymentService {
                 .provider(paymentProvider.getName())
                 .providerRef(providerRef)
                 .build();
-        payment = paymentRepository.save(payment);
-
-        PaymentProvider.ChargeResult result = paymentProvider.charge(
-                new PaymentProvider.ChargeRequest(bookingId, booking.getAmountDue(), providerRef));
-
-        if (result.success()) {
-            payment.setStatus(PaymentStatus.SUCCESS);
-            booking.setStatus(BookingStatus.CONFIRMED);
-            bookingRepository.save(booking);
-        } else {
-            payment.setStatus(PaymentStatus.FAILED);
-        }
 
         return PaymentResponse.from(paymentRepository.save(payment));
     }
@@ -81,5 +73,39 @@ public class PaymentService {
         return paymentRepository.findByBookingIdOrderByCreatedAtDesc(bookingId).stream()
                 .map(PaymentResponse::from)
                 .toList();
+    }
+
+    /**
+     * Provider callback — idempotent on SUCCESS. Only CREATED payments can transition.
+     */
+    @Transactional
+    public void handleWebhook(String providerRef, PaymentStatus status) {
+        if (status != PaymentStatus.SUCCESS && status != PaymentStatus.FAILED) {
+            throw new PaymentNotAllowedException("Webhook status must be SUCCESS or FAILED");
+        }
+
+        Payment payment = paymentRepository.findByProviderRef(providerRef)
+                .orElseThrow(() -> new PaymentNotFoundException(providerRef));
+
+        if (payment.getStatus() == status || payment.getStatus() != PaymentStatus.CREATED) {
+            return;
+        }
+
+        if (status == PaymentStatus.FAILED) {
+            payment.setStatus(PaymentStatus.FAILED);
+            paymentRepository.save(payment);
+            return;
+        }
+
+        Booking booking = bookingRepository.findById(payment.getBookingId())
+                .orElseThrow(() -> new BookingNotFoundException(payment.getBookingId()));
+
+        payment.setStatus(PaymentStatus.SUCCESS);
+        paymentRepository.save(payment);
+
+        if (booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
+            booking.setStatus(BookingStatus.CONFIRMED);
+            bookingRepository.save(booking);
+        }
     }
 }

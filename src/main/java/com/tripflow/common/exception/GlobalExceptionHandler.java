@@ -4,6 +4,8 @@ import com.tripflow.booking.exception.BookingNotAllowedException;
 import com.tripflow.booking.exception.BookingNotFoundException;
 import com.tripflow.booking.exception.TripFullException;
 import com.tripflow.payment.exception.PaymentNotAllowedException;
+import com.tripflow.payment.exception.PaymentNotFoundException;
+import com.tripflow.payment.exception.WebhookUnauthorizedException;
 import com.tripflow.trip.exception.AgencyNotVerifiedException;
 import com.tripflow.trip.exception.AgencyProfileNotFoundException;
 import com.tripflow.trip.exception.DuplicateItineraryDayException;
@@ -125,6 +127,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PaymentNotAllowedException.class)
     public ResponseEntity<ProblemDetail> handlePaymentNotAllowed(PaymentNotAllowedException exception) {
         return problem(HttpStatus.CONFLICT, "Payment not allowed", exception.getMessage());
+    }
+
+    @ExceptionHandler(PaymentNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handlePaymentNotFound(PaymentNotFoundException exception) {
+        return problem(HttpStatus.NOT_FOUND, "Payment not found", exception.getMessage());
+    }
+
+    @ExceptionHandler(WebhookUnauthorizedException.class)
+    public ResponseEntity<ProblemDetail> handleWebhookUnauthorized(WebhookUnauthorizedException exception) {
+        return problem(HttpStatus.UNAUTHORIZED, "Webhook unauthorized", exception.getMessage());
     }
 
     private ResponseEntity<ProblemDetail> problem(HttpStatus status, String title, String detail) {

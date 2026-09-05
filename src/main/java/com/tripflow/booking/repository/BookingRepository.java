@@ -2,6 +2,7 @@ package com.tripflow.booking.repository;
 
 import com.tripflow.booking.entity.Booking;
 import com.tripflow.booking.entity.BookingStatus;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -18,4 +19,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByUserIdOrderByCreatedAtDesc(Long userId);
 
     Optional<Booking> findByIdAndUserId(Long id, Long userId);
+
+    List<Booking> findByStatusAndCreatedAtBefore(BookingStatus status, Instant createdAt);
 }
