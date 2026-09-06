@@ -46,8 +46,6 @@ public class TripResponse {
     }
 
     public static List<TripResponse> from(List<Trip> trips) {
-        return trips.stream()
-                .map(TripResponse::from)
-                .toList();
+        return trips.stream().map(TripResponse::from).toList();
     }
 }
