@@ -11,7 +11,7 @@ import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
 /**
- * V1 WebSocket auth: client connects to /ws?token=&lt;jwt&gt;.
+ * V1 WebSocket auth: client connects to /ws?token=YOUR_JWT.
  */
 @Component
 @RequiredArgsConstructor
