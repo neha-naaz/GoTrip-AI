@@ -2,6 +2,9 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 import { AuthProvider } from "@/auth/AuthContext"
 import { ProtectedRoute } from "@/auth/ProtectedRoute"
 import { AppShell } from "@/components/layout/AppShell"
+import { AgencyTripsPage } from "@/pages/AgencyTripsPage"
+import { BookingsPage } from "@/pages/BookingsPage"
+import { CreateTripPage } from "@/pages/CreateTripPage"
 import { HomePage } from "@/pages/HomePage"
 import { LoginPage } from "@/pages/LoginPage"
 import { MePage } from "@/pages/MePage"
@@ -25,6 +28,30 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <MePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="bookings"
+              element={
+                <ProtectedRoute>
+                  <BookingsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="agency/trips"
+              element={
+                <ProtectedRoute>
+                  <AgencyTripsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="agency/trips/new"
+              element={
+                <ProtectedRoute>
+                  <CreateTripPage />
                 </ProtectedRoute>
               }
             />

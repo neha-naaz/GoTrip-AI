@@ -39,7 +39,21 @@ export function MePage() {
           </div>
 
           <div className="flex flex-wrap gap-3 pt-2">
-            <Button className="rounded-2xl" render={<Link to="/trips" />}>
+            {user?.role === "CUSTOMER" ? (
+              <Button className="rounded-2xl" render={<Link to="/bookings" />}>
+                My bookings
+              </Button>
+            ) : null}
+            {user?.role === "AGENCY" ? (
+              <Button className="rounded-2xl" render={<Link to="/agency/trips" />}>
+                My trips
+              </Button>
+            ) : null}
+            <Button
+              variant={user?.role === "CUSTOMER" || user?.role === "AGENCY" ? "outline" : "default"}
+              className="rounded-2xl"
+              render={<Link to="/trips" />}
+            >
               Explore trips
             </Button>
             <Button variant="outline" className="rounded-2xl" render={<Link to="/" />}>

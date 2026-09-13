@@ -30,6 +30,16 @@ export function AppShell() {
           <nav className="flex items-center gap-2 sm:gap-3">
             {isAuthenticated ? (
               <>
+                {user?.role === "CUSTOMER" ? (
+                  <NavLink to="/bookings" className={navLinkClass}>
+                    My bookings
+                  </NavLink>
+                ) : null}
+                {user?.role === "AGENCY" ? (
+                  <NavLink to="/agency/trips" className={navLinkClass}>
+                    My trips
+                  </NavLink>
+                ) : null}
                 <NavLink
                   to="/me"
                   className={({ isActive }) =>

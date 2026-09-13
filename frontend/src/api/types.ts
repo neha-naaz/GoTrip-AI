@@ -75,3 +75,47 @@ export type TripSearchParams = {
   source?: string
   destination?: string
 }
+
+/** Matches backend CreateTripRequest */
+export type CreateTripPayload = {
+  title: string
+  description?: string
+  source: string
+  destination: string
+  startDate: string
+  endDate: string
+  price: number
+  bookingAmount: number
+  capacity: number
+}
+
+/** Matches backend BookingResponse */
+export type BookingStatus = "PENDING_PAYMENT" | "CONFIRMED" | "CANCELLED" | "EXPIRED"
+
+export type Booking = {
+  id: number
+  tripId: number
+  status: BookingStatus
+  amountDue: number
+}
+
+export type CreateBookingRequest = {
+  tripId: number
+}
+
+/** Matches backend PaymentResponse */
+export type PaymentStatus = "CREATED" | "SUCCESS" | "FAILED"
+
+export type Payment = {
+  id: number
+  bookingId: number
+  amount: number
+  status: PaymentStatus
+  provider: string
+  providerRef: string
+}
+
+export type ConfirmWebhookRequest = {
+  providerRef: string
+  status: "SUCCESS" | "FAILED"
+}
