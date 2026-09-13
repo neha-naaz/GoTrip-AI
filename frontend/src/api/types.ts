@@ -35,3 +35,43 @@ export type LoginPayload = {
   email: string
   password: string
 }
+
+export type Trip = {
+  id: number
+  agencyId: number
+  title: string
+  description: string | null
+  source: string
+  destination: string
+  startDate: string
+  endDate: string
+  price: number
+  bookingAmount: number
+  capacity: number
+  status: string
+  createdAt: string
+}
+
+export type TripItinerary = {
+  id: number
+  dayNumber: number
+  title: string
+  description: string | null
+}
+
+export type TripItem = {
+  id: number
+  description: string
+}
+
+/** Matches backend TripDetailResponse */
+export type TripDetail = Trip & {
+  itineraries: TripItinerary[]
+  inclusions: TripItem[]
+  exclusions: TripItem[]
+}
+
+export type TripSearchParams = {
+  source?: string
+  destination?: string
+}

@@ -3,6 +3,11 @@ import { Compass, LogOut } from "lucide-react"
 import { useAuth } from "@/auth/AuthContext"
 import { Button } from "@/components/ui/button"
 
+const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+  `rounded-2xl px-3 py-2 text-sm transition-colors ${
+    isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"
+  }`
+
 export function AppShell() {
   const { isAuthenticated, user, logout } = useAuth()
 
@@ -10,12 +15,17 @@ export function AppShell() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b border-border/80 bg-background/90 backdrop-blur-sm">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link to="/" className="flex items-center gap-2.5">
-            <span className="flex size-9 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-              <Compass className="size-4.5" />
-            </span>
-            <span className="text-lg font-semibold tracking-tight">Tripflow</span>
-          </Link>
+          <div className="flex items-center gap-6">
+            <Link to="/" className="flex items-center gap-2.5">
+              <span className="flex size-9 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+                <Compass className="size-4.5" />
+              </span>
+              <span className="text-lg font-semibold tracking-tight">Tripflow</span>
+            </Link>
+            <NavLink to="/trips" className={navLinkClass}>
+              Explore
+            </NavLink>
+          </div>
 
           <nav className="flex items-center gap-2 sm:gap-3">
             {isAuthenticated ? (
@@ -23,11 +33,7 @@ export function AppShell() {
                 <NavLink
                   to="/me"
                   className={({ isActive }) =>
-                    `hidden rounded-2xl px-3 py-2 text-sm transition-colors sm:inline-flex ${
-                      isActive
-                        ? "bg-accent text-accent-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`
+                    `${navLinkClass({ isActive })} hidden sm:inline-flex`
                   }
                 >
                   {user?.name ?? user?.email}

@@ -29,26 +29,28 @@ export function HomePage() {
             people who want the same adventure.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
+            <Button size="lg" className="h-11 rounded-2xl px-5" render={<Link to="/trips" />}>
+              Explore trips
+              <ArrowRight className="size-4" />
+            </Button>
             {isAuthenticated ? (
-              <Button size="lg" className="h-11 rounded-2xl px-5" render={<Link to="/me" />}>
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-11 rounded-2xl border-white/30 bg-white/10 px-5 text-white hover:bg-white/20 hover:text-white"
+                render={<Link to="/me" />}
+              >
                 Go to account
-                <ArrowRight className="size-4" />
               </Button>
             ) : (
-              <>
-                <Button size="lg" className="h-11 rounded-2xl px-5" render={<Link to="/register" />}>
-                  Create account
-                  <ArrowRight className="size-4" />
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="h-11 rounded-2xl border-white/30 bg-white/10 px-5 text-white hover:bg-white/20 hover:text-white"
-                  render={<Link to="/login" />}
-                >
-                  Sign in
-                </Button>
-              </>
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-11 rounded-2xl border-white/30 bg-white/10 px-5 text-white hover:bg-white/20 hover:text-white"
+                render={<Link to="/register" />}
+              >
+                Create account
+              </Button>
             )}
           </div>
         </div>

@@ -39,11 +39,11 @@ export function MePage() {
           </div>
 
           <div className="flex flex-wrap gap-3 pt-2">
-            <Button className="rounded-2xl" render={<Link to="/" />}>
-              Back to home
+            <Button className="rounded-2xl" render={<Link to="/trips" />}>
+              Explore trips
             </Button>
-            <Button variant="outline" className="rounded-2xl" disabled>
-              Browse trips — next
+            <Button variant="outline" className="rounded-2xl" render={<Link to="/" />}>
+              Back to home
             </Button>
           </div>
         </CardContent>
