@@ -1,9 +1,9 @@
 package com.tripflow.chat.config;
 
-import com.tripflow.chat.security.JwtHandshakeHandler;
-import com.tripflow.chat.security.JwtHandshakeInterceptor;
+import com.tripflow.chat.security.JwtStompChannelInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
@@ -14,15 +14,12 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    private final JwtHandshakeInterceptor jwtHandshakeInterceptor;
-    private final JwtHandshakeHandler jwtHandshakeHandler;
+    private final JwtStompChannelInterceptor jwtStompChannelInterceptor;
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws")
-                .addInterceptors(jwtHandshakeInterceptor)
-                .setHandshakeHandler(jwtHandshakeHandler)
-                .setAllowedOriginPatterns("*");
+        // Handshake is open; auth happens on STOMP CONNECT (Bearer header).
+        registry.addEndpoint("/ws").setAllowedOriginPatterns("*");
     }
 
     @Override
@@ -30,5 +27,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.enableSimpleBroker("/topic", "/queue");
         registry.setApplicationDestinationPrefixes("/app");
         registry.setUserDestinationPrefix("/user");
+    }
+
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.interceptors(jwtStompChannelInterceptor);
     }
 }

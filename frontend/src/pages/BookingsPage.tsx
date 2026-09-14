@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { CreditCard, MapPin } from "lucide-react"
+import { CreditCard, MapPin, MessageCircle } from "lucide-react"
 import { ApiError } from "@/api/client"
 import { listMyBookings } from "@/api/booking"
 import { payAndConfirm } from "@/api/payments"
@@ -180,9 +180,16 @@ export function BookingsPage() {
                 ) : null}
 
                 {booking.status === "CONFIRMED" ? (
-                  <p className="mt-4 text-sm text-muted-foreground">
-                    Seat confirmed. Group chat UI comes next.
-                  </p>
+                  <div className="mt-5 flex flex-wrap items-center gap-3">
+                    <Button
+                      className="h-11 rounded-2xl"
+                      render={<Link to={`/trips/${booking.tripId}/chat`} />}
+                    >
+                      <MessageCircle className="size-4" />
+                      Open group chat
+                    </Button>
+                    <p className="text-sm text-muted-foreground">Seat confirmed.</p>
+                  </div>
                 ) : null}
               </li>
             )

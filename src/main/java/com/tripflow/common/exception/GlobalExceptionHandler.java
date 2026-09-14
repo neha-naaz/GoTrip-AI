@@ -3,6 +3,7 @@ package com.tripflow.common.exception;
 import com.tripflow.booking.exception.BookingNotAllowedException;
 import com.tripflow.booking.exception.BookingNotFoundException;
 import com.tripflow.booking.exception.TripFullException;
+import com.tripflow.group.exception.NotGroupMemberException;
 import com.tripflow.group.exception.TripGroupNotFoundException;
 import com.tripflow.payment.exception.PaymentNotAllowedException;
 import com.tripflow.payment.exception.PaymentNotFoundException;
@@ -143,6 +144,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(TripGroupNotFoundException.class)
     public ResponseEntity<ProblemDetail> handleTripGroupNotFound(TripGroupNotFoundException exception) {
         return problem(HttpStatus.NOT_FOUND, "Trip group not found", exception.getMessage());
+    }
+
+    @ExceptionHandler(NotGroupMemberException.class)
+    public ResponseEntity<ProblemDetail> handleNotGroupMember(NotGroupMemberException exception) {
+        return problem(HttpStatus.FORBIDDEN, "Not a group member", exception.getMessage());
     }
 
     private ResponseEntity<ProblemDetail> problem(HttpStatus status, String title, String detail) {

@@ -119,3 +119,23 @@ export type ConfirmWebhookRequest = {
   providerRef: string
   status: "SUCCESS" | "FAILED"
 }
+
+export type TripGroup = {
+  id: number
+  tripId: number
+}
+
+export type GroupMember = {
+  id: number
+  userId: number
+  bookingId: number
+  joinedAt: string
+}
+
+export type ChatMessage = {
+  id: number
+  groupId: number
+  senderUserId: number
+  content: string
+  createdAt: string
+}
