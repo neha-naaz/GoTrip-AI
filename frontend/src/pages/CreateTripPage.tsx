@@ -63,7 +63,7 @@ export function CreateTripPage() {
         bookingAmount: Number(bookingAmount),
         capacity: Number(capacity),
       })
-      navigate("/agency/trips", { state: { createdTripId: trip.id } })
+      navigate(`/agency/trips/${trip.id}/edit`)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not create trip")
     } finally {

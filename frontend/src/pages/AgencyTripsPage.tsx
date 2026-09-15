@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import { Plus, Rocket, Trash2 } from "lucide-react"
+import { Pencil, Plus, Rocket, Trash2 } from "lucide-react"
 import { ApiError } from "@/api/client"
 import { deleteAgencyTrip, listAgencyTrips, publishAgencyTrip } from "@/api/agencyTrips"
 import type { Trip } from "@/api/types"
@@ -144,6 +144,37 @@ export function AgencyTripsPage() {
               </div>
 
               <div className="mt-5 flex flex-wrap gap-2">
+                {trip.status === "DRAFT" ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-2xl"
+                      render={<Link to={`/agency/trips/${trip.id}/edit`} />}
+                    >
+                      <Pencil className="size-3.5" />
+                      Edit content
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-2xl"
+                      render={<Link to={`/agency/trips/${trip.id}/preview`} />}
+                    >
+                      Preview
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="rounded-2xl"
+                      disabled={busyId === trip.id}
+                      onClick={() => void onPublish(trip.id)}
+                    >
+                      <Rocket className="size-3.5" />
+                      {busyId === trip.id ? "Publishing…" : "Publish"}
+                    </Button>
+                  </>
+                ) : null}
+
                 {trip.status === "PUBLISHED" ? (
                   <Button
                     variant="outline"
@@ -152,18 +183,6 @@ export function AgencyTripsPage() {
                     render={<Link to={`/trips/${trip.id}`} />}
                   >
                     View public page
-                  </Button>
-                ) : null}
-
-                {trip.status === "DRAFT" ? (
-                  <Button
-                    size="sm"
-                    className="rounded-2xl"
-                    disabled={busyId === trip.id}
-                    onClick={() => void onPublish(trip.id)}
-                  >
-                    <Rocket className="size-3.5" />
-                    {busyId === trip.id ? "Publishing…" : "Publish"}
                   </Button>
                 ) : null}
 

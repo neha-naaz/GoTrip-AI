@@ -1,29 +1,30 @@
 import { useEffect, useState } from "react"
-import { Link, useNavigate, useParams } from "react-router-dom"
-import { ArrowLeft, CalendarDays, Users } from "lucide-react"
-import { createBooking } from "@/api/booking"
+import { Link, useParams } from "react-router-dom"
+import { ArrowLeft, CalendarDays, Pencil, Users } from "lucide-react"
 import { ApiError } from "@/api/client"
-import { getTrip } from "@/api/trips"
-import type { TripDetail } from "@/api/types"
+import { listAgencyTrips } from "@/api/agencyTrips"
+import { listExclusions, listInclusions, listItineraries } from "@/api/tripContent"
+import type { Trip, TripItinerary, TripItem } from "@/api/types"
 import { useAuth } from "@/auth/AuthContext"
 import { Button } from "@/components/ui/button"
 import { formatTripDateRange, formatTripMoney, tripImageForDestination } from "@/lib/trip-display"
 
-export function TripDetailPage() {
+export function AgencyTripPreviewPage() {
   const { tripId } = useParams()
-  const navigate = useNavigate()
-  const { isAuthenticated, user } = useAuth()
-  const [trip, setTrip] = useState<TripDetail | null>(null)
+  const { user } = useAuth()
+  const id = Number(tripId)
+
+  const [trip, setTrip] = useState<Trip | null>(null)
+  const [itineraries, setItineraries] = useState<TripItinerary[]>([])
+  const [inclusions, setInclusions] = useState<TripItem[]>([])
+  const [exclusions, setExclusions] = useState<TripItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [booking, setBooking] = useState(false)
-  const [bookError, setBookError] = useState<string | null>(null)
 
   useEffect(() => {
-    const id = Number(tripId)
-    if (!Number.isFinite(id)) {
-      setError("Invalid trip")
+    if (user?.role !== "AGENCY" || !Number.isFinite(id)) {
       setLoading(false)
+      if (!Number.isFinite(id)) setError("Invalid trip")
       return
     }
 
@@ -32,12 +33,29 @@ export function TripDetailPage() {
       setLoading(true)
       setError(null)
       try {
-        const data = await getTrip(id)
-        if (!cancelled) setTrip(data)
+        const trips = await listAgencyTrips()
+        const found = trips.find((t) => t.id === id) ?? null
+        if (!found) {
+          if (!cancelled) {
+            setTrip(null)
+            setError("Trip not found")
+          }
+          return
+        }
+
+        const [days, incl, excl] = await Promise.all([
+          listItineraries(id),
+          listInclusions(id),
+          listExclusions(id),
+        ])
+        if (cancelled) return
+        setTrip(found)
+        setItineraries(days)
+        setInclusions(incl)
+        setExclusions(excl)
       } catch (err) {
         if (!cancelled) {
-          setTrip(null)
-          setError(err instanceof ApiError ? err.message : "Trip not found")
+          setError(err instanceof ApiError ? err.message : "Could not load preview")
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -47,26 +65,23 @@ export function TripDetailPage() {
     return () => {
       cancelled = true
     }
-  }, [tripId])
+  }, [user?.role, id])
 
-  async function onBook() {
-    if (!trip) return
-    setBookError(null)
-    setBooking(true)
-    try {
-      await createBooking({ tripId: trip.id })
-      navigate("/bookings")
-    } catch (err) {
-      setBookError(err instanceof ApiError ? err.message : "Could not create booking")
-    } finally {
-      setBooking(false)
-    }
+  if (user?.role !== "AGENCY") {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6">
+        <p className="text-lg font-medium">Preview is for agency accounts</p>
+        <Button className="mt-6 rounded-2xl" render={<Link to="/trips" />}>
+          Explore trips
+        </Button>
+      </div>
+    )
   }
 
   if (loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center text-sm text-muted-foreground">
-        Loading trip…
+        Loading preview…
       </div>
     )
   }
@@ -75,9 +90,9 @@ export function TripDetailPage() {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6">
         <p className="text-lg font-medium">{error ?? "Trip not found"}</p>
-        <Button className="mt-6 rounded-2xl" render={<Link to="/trips" />}>
+        <Button className="mt-6 rounded-2xl" render={<Link to="/agency/trips" />}>
           <ArrowLeft className="size-4" />
-          Back to explore
+          My trips
         </Button>
       </div>
     )
@@ -87,13 +102,28 @@ export function TripDetailPage() {
 
   return (
     <div>
+      <div className="border-b border-border bg-amber-50 px-4 py-3 text-center text-sm text-amber-900 sm:px-6">
+        Draft preview — only you can see this. Customers see it after publish.
+        {trip.status === "DRAFT" ? (
+          <>
+            {" "}
+            <Link to={`/agency/trips/${trip.id}/edit`} className="font-medium underline underline-offset-2">
+              Edit content
+            </Link>
+          </>
+        ) : null}
+      </div>
+
       <section className="relative isolate min-h-[48vh] overflow-hidden">
         <img src={imageUrl} alt={trip.destination} className="absolute inset-0 size-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/15" />
         <div className="relative mx-auto flex min-h-[48vh] max-w-6xl flex-col justify-end px-4 pb-10 pt-20 sm:px-6">
-          <Link to="/trips" className="mb-4 inline-flex w-fit items-center gap-2 text-sm text-white/80 hover:text-white">
+          <Link
+            to="/agency/trips"
+            className="mb-4 inline-flex w-fit items-center gap-2 text-sm text-white/80 hover:text-white"
+          >
             <ArrowLeft className="size-4" />
-            Explore
+            My trips
           </Link>
           <h1 className="max-w-3xl text-3xl font-semibold tracking-tight text-white sm:text-5xl">
             {trip.title}
@@ -115,11 +145,11 @@ export function TripDetailPage() {
 
           <section>
             <h2 className="text-xl font-semibold tracking-tight">Itinerary</h2>
-            {trip.itineraries.length === 0 ? (
+            {itineraries.length === 0 ? (
               <p className="mt-3 text-sm text-muted-foreground">Itinerary coming soon.</p>
             ) : (
               <ol className="mt-4 space-y-3">
-                {trip.itineraries.map((day) => (
+                {itineraries.map((day) => (
                   <li key={day.id} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
                     <p className="text-xs font-medium tracking-wide text-primary uppercase">
                       Day {day.dayNumber}
@@ -136,11 +166,11 @@ export function TripDetailPage() {
 
           <section>
             <h2 className="text-xl font-semibold tracking-tight">Inclusions</h2>
-            {trip.inclusions.length === 0 ? (
+            {inclusions.length === 0 ? (
               <p className="mt-3 text-sm text-muted-foreground">None listed.</p>
             ) : (
               <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-                {trip.inclusions.map((item) => (
+                {inclusions.map((item) => (
                   <li key={item.id}>{item.description}</li>
                 ))}
               </ul>
@@ -149,11 +179,11 @@ export function TripDetailPage() {
 
           <section>
             <h2 className="text-xl font-semibold tracking-tight">Exclusions</h2>
-            {trip.exclusions.length === 0 ? (
+            {exclusions.length === 0 ? (
               <p className="mt-3 text-sm text-muted-foreground">None listed.</p>
             ) : (
               <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-                {trip.exclusions.map((item) => (
+                {exclusions.map((item) => (
                   <li key={item.id}>{item.description}</li>
                 ))}
               </ul>
@@ -178,31 +208,21 @@ export function TripDetailPage() {
             </p>
           </div>
 
-          {bookError ? (
-            <p className="mt-4 rounded-2xl bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {bookError}
-            </p>
-          ) : null}
-
-          {!isAuthenticated ? (
-            <Button className="mt-8 h-11 w-full rounded-2xl" render={<Link to="/login" />}>
-              Sign in to book
-            </Button>
-          ) : user?.role === "CUSTOMER" ? (
+          {trip.status === "DRAFT" ? (
             <Button
               className="mt-8 h-11 w-full rounded-2xl"
-              disabled={booking}
-              onClick={() => void onBook()}
+              render={<Link to={`/agency/trips/${trip.id}/edit`} />}
             >
-              {booking ? "Booking…" : "Book this trip"}
+              <Pencil className="size-4" />
+              Edit content
             </Button>
           ) : (
-            <Button className="mt-8 h-11 w-full rounded-2xl" variant="outline" disabled>
-              Agency accounts browse only
+            <Button className="mt-8 h-11 w-full rounded-2xl" render={<Link to={`/trips/${trip.id}`} />}>
+              View public page
             </Button>
           )}
           <p className="mt-3 text-center text-xs text-muted-foreground">
-            Creates a pending booking. Pay from My bookings to confirm.
+            This is how travelers will see your trip after publish.
           </p>
         </aside>
       </div>

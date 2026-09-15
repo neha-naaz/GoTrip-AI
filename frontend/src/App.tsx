@@ -2,6 +2,8 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 import { AuthProvider } from "@/auth/AuthContext"
 import { ProtectedRoute } from "@/auth/ProtectedRoute"
 import { AppShell } from "@/components/layout/AppShell"
+import { AgencyTripEditPage } from "@/pages/AgencyTripEditPage"
+import { AgencyTripPreviewPage } from "@/pages/AgencyTripPreviewPage"
 import { AgencyTripsPage } from "@/pages/AgencyTripsPage"
 import { BookingsPage } from "@/pages/BookingsPage"
 import { CreateTripPage } from "@/pages/CreateTripPage"
@@ -61,6 +63,22 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <CreateTripPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="agency/trips/:tripId/edit"
+              element={
+                <ProtectedRoute>
+                  <AgencyTripEditPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="agency/trips/:tripId/preview"
+              element={
+                <ProtectedRoute>
+                  <AgencyTripPreviewPage />
                 </ProtectedRoute>
               }
             />
