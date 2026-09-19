@@ -1,10 +1,14 @@
 export type UserRole = "CUSTOMER" | "AGENCY" | "ADMIN"
 
+export type AgencyVerificationStatus = "PENDING" | "VERIFIED" | "REJECTED"
+
 export type AuthUser = {
   userId: number
   email: string
   role: UserRole
   name?: string
+  verificationStatus?: AgencyVerificationStatus | null
+  agencyName?: string | null
 }
 
 export type AuthResponse = {
@@ -21,6 +25,8 @@ export type UserResponse = {
   email: string
   role: UserRole
   status: string
+  verificationStatus?: AgencyVerificationStatus | null
+  agencyName?: string | null
 }
 
 export type RegisterPayload = {

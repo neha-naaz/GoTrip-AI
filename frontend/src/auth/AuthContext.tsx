@@ -72,6 +72,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: me.email,
       role: me.role,
       name: me.name,
+      verificationStatus: me.verificationStatus ?? null,
+      agencyName: me.agencyName ?? null,
     }
     setUser(nextUser)
     localStorage.setItem(USER_KEY, JSON.stringify(nextUser))
