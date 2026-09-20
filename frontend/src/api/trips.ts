@@ -14,6 +14,12 @@ export function listTrips(params: TripSearchParams = {}) {
   if (params.destination?.trim()) {
     query.set("destination", params.destination.trim())
   }
+  if (params.startDateFrom?.trim()) {
+    query.set("startDateFrom", params.startDateFrom.trim())
+  }
+  if (params.startDateTo?.trim()) {
+    query.set("startDateTo", params.startDateTo.trim())
+  }
 
   const suffix = query.toString() ? `?${query.toString()}` : ""
   return apiRequest<Trip[]>(`/api/trips${suffix}`, { method: "GET" }, false)

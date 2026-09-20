@@ -80,6 +80,10 @@ export type TripDetail = Trip & {
 export type TripSearchParams = {
   source?: string
   destination?: string
+  /** Inclusive lower bound on trip startDate (yyyy-MM-dd) */
+  startDateFrom?: string
+  /** Inclusive upper bound on trip startDate (yyyy-MM-dd) */
+  startDateTo?: string
 }
 
 /** Matches backend CreateTripRequest */

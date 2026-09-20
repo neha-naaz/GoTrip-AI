@@ -15,12 +15,14 @@ import com.tripflow.trip.exception.AgencyProfileNotFoundException;
 import com.tripflow.trip.exception.ForbiddenException;
 import com.tripflow.trip.exception.TripDeletionNotAllowedException;
 import com.tripflow.trip.exception.TripNotFoundException;
+import com.tripflow.trip.exception.TripRulesInvalidException;
 import com.tripflow.trip.repository.TripRepository;
 import com.tripflow.trip.validation.TripStateValidator;
 import com.tripflow.trip.validation.TripWriteValidator;
 import com.tripflow.user.entity.User;
 import com.tripflow.user.entity.UserRole;
 import com.tripflow.user.repository.UserRepository;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -102,29 +104,26 @@ public class TripService {
     }
 
     @Transactional(readOnly = true)
-    public List<TripResponse> searchPublished(String source, String destination) {
-        boolean hasSource = StringUtils.hasText(source);
-        boolean hasDestination = StringUtils.hasText(destination);
-
-        if (!hasSource && !hasDestination) {
-            return listAllPublishedTrips();
+    public List<TripResponse> searchPublished(
+            String source, String destination, LocalDate startDateFrom, LocalDate startDateTo) {
+        if (startDateFrom != null && startDateTo != null && startDateFrom.isAfter(startDateTo)) {
+            throw new TripRulesInvalidException("startDateFrom must be on or before startDateTo");
         }
 
-        if (hasSource && hasDestination) {
-            return TripResponse.from(
-                    tripRepository.findByStatusAndSourceIgnoreCaseAndDestinationIgnoreCaseOrderByStartDateAsc(
-                            TripStatus.PUBLISHED, source.trim(), destination.trim()));
-        }
+        String sourceFilter = StringUtils.hasText(source) ? source.trim() : "";
+        String destinationFilter = StringUtils.hasText(destination) ? destination.trim() : "";
+        // Postgres can't infer types for null bind params in lower(...); use "" / boolean flags instead.
+        LocalDate from = startDateFrom != null ? startDateFrom : LocalDate.EPOCH;
+        LocalDate to = startDateTo != null ? startDateTo : LocalDate.EPOCH;
 
-        if (hasSource) {
-            return TripResponse.from(
-                    tripRepository.findByStatusAndSourceIgnoreCaseOrderByStartDateAsc(TripStatus.PUBLISHED,
-                            source.trim()));
-        }
-
-        return TripResponse.from(
-                tripRepository.findByStatusAndDestinationIgnoreCaseOrderByStartDateAsc(TripStatus.PUBLISHED,
-                        destination.trim()));
+        return TripResponse.from(tripRepository.searchPublished(
+                TripStatus.PUBLISHED,
+                sourceFilter,
+                destinationFilter,
+                startDateFrom != null,
+                from,
+                startDateTo != null,
+                to));
     }
 
     private void applyWritableFields(Trip trip, TripWritable request) {

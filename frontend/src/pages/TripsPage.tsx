@@ -5,23 +5,33 @@ import { listTrips } from "@/api/trips"
 import type { Trip } from "@/api/types"
 import { TripCard } from "@/components/trips/TripCard"
 import { Button } from "@/components/ui/button"
+import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 export function TripsPage() {
   const [source, setSource] = useState("")
   const [destination, setDestination] = useState("")
+  const [startDateFrom, setStartDateFrom] = useState("")
+  const [startDateTo, setStartDateTo] = useState("")
   const [trips, setTrips] = useState<Trip[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  async function loadTrips(nextSource = source, nextDestination = destination) {
+  async function loadTrips(filters: {
+    source?: string
+    destination?: string
+    startDateFrom?: string
+    startDateTo?: string
+  } = {}) {
     setLoading(true)
     setError(null)
     try {
       const data = await listTrips({
-        source: nextSource,
-        destination: nextDestination,
+        source: filters.source ?? source,
+        destination: filters.destination ?? destination,
+        startDateFrom: filters.startDateFrom ?? startDateFrom,
+        startDateTo: filters.startDateTo ?? startDateTo,
       })
       setTrips(data)
     } catch (err) {
@@ -32,15 +42,23 @@ export function TripsPage() {
     }
   }
 
-  // Run once when the page opens
   useEffect(() => {
-    void loadTrips("", "")
+    void loadTrips({
+      source: "",
+      destination: "",
+      startDateFrom: "",
+      startDateTo: "",
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function onSearch(event: FormEvent) {
     event.preventDefault()
-    void loadTrips(source, destination)
+    if (startDateFrom && startDateTo && startDateFrom > startDateTo) {
+      setError("Departure window is invalid")
+      return
+    }
+    void loadTrips()
   }
 
   return (
@@ -48,13 +66,13 @@ export function TripsPage() {
       <div className="mb-8 max-w-2xl">
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Explore trips</h1>
         <p className="mt-2 text-muted-foreground">
-          Find published group adventures by source and destination.
+          Search by route, dates, or both — any field can stand alone.
         </p>
       </div>
 
       <form
         onSubmit={onSearch}
-        className="mb-10 grid gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+        className="mb-10 grid gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm sm:grid-cols-[1fr_1fr_minmax(11rem,1.1fr)_auto] sm:items-end"
       >
         <div className="space-y-2">
           <Label htmlFor="source">From</Label>
@@ -76,6 +94,14 @@ export function TripsPage() {
             className="h-11 rounded-2xl"
           />
         </div>
+        <DateRangePicker
+          from={startDateFrom}
+          to={startDateTo}
+          onChange={({ from, to }) => {
+            setStartDateFrom(from)
+            setStartDateTo(to)
+          }}
+        />
         <Button type="submit" className="h-11 rounded-2xl sm:min-w-28" disabled={loading}>
           <Search className="size-4" />
           Search

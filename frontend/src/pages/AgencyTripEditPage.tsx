@@ -394,8 +394,8 @@ export function AgencyTripEditPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
+                  <div className="flex items-start gap-3">
+                    <div className="min-w-0 flex-1">
                       <p className="font-medium">
                         Day {item.dayNumber}: {item.title}
                       </p>
@@ -404,7 +404,7 @@ export function AgencyTripEditPage() {
                       ) : null}
                     </div>
                     {canEdit ? (
-                      <div className="flex gap-2">
+                      <div className="flex shrink-0 gap-2">
                         <Button
                           size="sm"
                           variant="outline"
@@ -588,10 +588,10 @@ function ItemSection({
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <p className="text-sm">{item.description}</p>
+                <div className="flex items-start gap-3">
+                  <p className="min-w-0 flex-1 text-sm">{item.description}</p>
                   {canEdit ? (
-                    <div className="flex gap-2">
+                    <div className="flex shrink-0 gap-2">
                       <Button
                         size="sm"
                         variant="outline"

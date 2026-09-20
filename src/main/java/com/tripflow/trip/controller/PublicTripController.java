@@ -4,8 +4,10 @@ import com.tripflow.trip.dto.TripDetailResponse;
 import com.tripflow.trip.dto.TripResponse;
 import com.tripflow.trip.service.TripContentService;
 import com.tripflow.trip.service.TripService;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,8 +26,10 @@ public class PublicTripController {
     @GetMapping
     public ResponseEntity<List<TripResponse>> listPublished(
             @RequestParam(required = false) String source,
-            @RequestParam(required = false) String destination) {
-        return ResponseEntity.ok(tripService.searchPublished(source, destination));
+            @RequestParam(required = false) String destination,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDateTo) {
+        return ResponseEntity.ok(tripService.searchPublished(source, destination, startDateFrom, startDateTo));
     }
 
     @GetMapping("/{tripId}")
