@@ -1,5 +1,6 @@
 package com.tripflow.trip.controller;
 
+import com.tripflow.trip.dto.AgencyTravelerResponse;
 import com.tripflow.trip.dto.CreateTripRequest;
 import com.tripflow.trip.dto.TripResponse;
 import com.tripflow.trip.dto.UpdateTripRequest;
@@ -49,6 +50,12 @@ public class TripController {
     public ResponseEntity<Void> deleteTrip(@AuthenticationPrincipal UserDetails principal, @PathVariable Long tripId) {
         tripService.deleteTrip(principal.getUsername(), tripId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{tripId}/travelers")
+    public ResponseEntity<List<AgencyTravelerResponse>> listTravelers(
+            @AuthenticationPrincipal UserDetails principal, @PathVariable Long tripId) {
+        return ResponseEntity.ok(tripService.listConfirmedTravelers(principal.getUsername(), tripId));
     }
 
     @PostMapping("/{tripId}/publish")

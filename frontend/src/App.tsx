@@ -4,6 +4,7 @@ import { ProtectedRoute } from "@/auth/ProtectedRoute"
 import { AppShell } from "@/components/layout/AppShell"
 import { AgencyTripEditPage } from "@/pages/AgencyTripEditPage"
 import { AgencyTripPreviewPage } from "@/pages/AgencyTripPreviewPage"
+import { AgencyTripTravelersPage } from "@/pages/AgencyTripTravelersPage"
 import { AgencyTripsPage } from "@/pages/AgencyTripsPage"
 import { BookingsPage } from "@/pages/BookingsPage"
 import { CreateTripPage } from "@/pages/CreateTripPage"
@@ -79,6 +80,14 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <AgencyTripPreviewPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="agency/trips/:tripId/travelers"
+              element={
+                <ProtectedRoute>
+                  <AgencyTripTravelersPage />
                 </ProtectedRoute>
               }
             />

@@ -12,6 +12,8 @@ import com.tripflow.group.repository.TripGroupRepository;
 import com.tripflow.user.entity.User;
 import com.tripflow.user.repository.UserRepository;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class GroupMembershipService {
+
+    private static final String FALLBACK_NAME = "Traveler";
 
     private final TripGroupRepository tripGroupRepository;
     private final GroupMemberRepository groupMemberRepository;
@@ -60,12 +64,33 @@ public class GroupMembershipService {
     }
 
     @Transactional(readOnly = true)
-    public List<GroupMemberResponse> listAllGroupMembers(Long tripId) {
+    public List<GroupMemberResponse> listAllGroupMembers(Long tripId, String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
         TripGroup tripGroup = tripGroupRepository.findByTripId(tripId)
                 .orElseThrow(() -> new TripGroupNotFoundException(tripId));
 
-        return groupMemberRepository.findAllByGroupId(tripGroup.getId()).stream()
-                .map(GroupMemberResponse::from)
+        if (!groupMemberRepository.existsByGroupIdAndUserId(tripGroup.getId(), user.getId())) {
+            throw new NotGroupMemberException("You are not a member of this trip group");
+        }
+
+        List<GroupMember> members = groupMemberRepository.findAllByGroupId(tripGroup.getId());
+        Map<Long, String> namesById = userRepository.findAllById(
+                        members.stream().map(GroupMember::getUserId).toList())
+                .stream()
+                .collect(Collectors.toMap(User::getId, this::displayName));
+
+        return members.stream()
+                .map(member -> GroupMemberResponse.from(
+                        member, namesById.getOrDefault(member.getUserId(), FALLBACK_NAME)))
                 .toList();
+    }
+
+    private String displayName(User user) {
+        if (user.getName() == null || user.getName().isBlank()) {
+            return FALLBACK_NAME;
+        }
+        return user.getName().trim();
     }
 }

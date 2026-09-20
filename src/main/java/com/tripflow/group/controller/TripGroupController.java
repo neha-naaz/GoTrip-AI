@@ -28,7 +28,9 @@ public class TripGroupController {
     }
 
     @GetMapping("/{tripId}/group/members")
-    public ResponseEntity<List<GroupMemberResponse>> getGroupMembers(@PathVariable Long tripId) {
-        return ResponseEntity.ok(groupMembershipService.listAllGroupMembers(tripId));
+    public ResponseEntity<List<GroupMemberResponse>> getGroupMembers(
+            @AuthenticationPrincipal UserDetails principal,
+            @PathVariable Long tripId) {
+        return ResponseEntity.ok(groupMembershipService.listAllGroupMembers(tripId, principal.getUsername()));
     }
 }

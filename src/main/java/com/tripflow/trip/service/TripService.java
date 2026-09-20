@@ -3,7 +3,10 @@ package com.tripflow.trip.service;
 import com.tripflow.agency.entity.AgencyProfile;
 import com.tripflow.agency.entity.VerificationStatus;
 import com.tripflow.agency.repository.AgencyProfileRepository;
+import com.tripflow.booking.entity.Booking;
+import com.tripflow.booking.entity.BookingStatus;
 import com.tripflow.booking.repository.BookingRepository;
+import com.tripflow.trip.dto.AgencyTravelerResponse;
 import com.tripflow.trip.dto.CreateTripRequest;
 import com.tripflow.trip.dto.TripResponse;
 import com.tripflow.trip.dto.TripWritable;
@@ -24,7 +27,9 @@ import com.tripflow.user.entity.UserRole;
 import com.tripflow.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -96,6 +101,39 @@ public class TripService {
     public List<TripResponse> listAgencyTrips(String userEmail) {
         AgencyProfile agency = requireAgencyProfile(userEmail);
         return TripResponse.from(tripRepository.findByAgencyIdOrderByCreatedAtDesc(agency.getId()));
+    }
+
+    @Transactional(readOnly = true)
+    public List<AgencyTravelerResponse> listConfirmedTravelers(String userEmail, Long tripId) {
+        AgencyProfile agency = requireAgencyProfile(userEmail);
+        requireOwnedTrip(tripId, agency.getId());
+
+        List<Booking> bookings =
+                bookingRepository.findByTripIdAndStatusOrderByCreatedAtAsc(tripId, BookingStatus.CONFIRMED);
+        if (bookings.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, User> usersById = userRepository.findAllById(
+                        bookings.stream().map(Booking::getUserId).toList())
+                .stream()
+                .collect(Collectors.toMap(User::getId, user -> user));
+
+        return bookings.stream()
+                .map(booking -> {
+                    User traveler = usersById.get(booking.getUserId());
+                    String name = traveler != null && StringUtils.hasText(traveler.getName())
+                            ? traveler.getName().trim()
+                            : "Traveler";
+                    String email = traveler != null ? traveler.getEmail() : "";
+                    return new AgencyTravelerResponse(
+                            booking.getId(),
+                            booking.getUserId(),
+                            name,
+                            email,
+                            booking.getCreatedAt());
+                })
+                .toList();
     }
 
     @Transactional(readOnly = true)

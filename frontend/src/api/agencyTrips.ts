@@ -1,5 +1,5 @@
 import { apiRequest } from "@/api/client"
-import type { CreateTripPayload, Trip } from "@/api/types"
+import type { AgencyTraveler, CreateTripPayload, Trip } from "@/api/types"
 
 export function listAgencyTrips() {
   return apiRequest<Trip[]>("/api/agency/trips")
@@ -22,4 +22,8 @@ export function deleteAgencyTrip(tripId: number) {
   return apiRequest<void>(`/api/agency/trips/${tripId}`, {
     method: "DELETE",
   })
+}
+
+export function listAgencyTravelers(tripId: number) {
+  return apiRequest<AgencyTraveler[]>(`/api/agency/trips/${tripId}/travelers`)
 }

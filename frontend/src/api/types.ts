@@ -138,6 +138,7 @@ export type TripGroup = {
 export type GroupMember = {
   id: number
   userId: number
+  name: string
   bookingId: number
   joinedAt: string
 }
@@ -146,6 +147,15 @@ export type ChatMessage = {
   id: number
   groupId: number
   senderUserId: number
+  senderName: string
   content: string
   createdAt: string
+}
+
+export type AgencyTraveler = {
+  bookingId: number
+  userId: number
+  name: string
+  email: string
+  bookedAt: string
 }

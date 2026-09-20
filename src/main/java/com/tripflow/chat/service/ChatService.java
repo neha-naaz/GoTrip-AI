@@ -10,6 +10,9 @@ import com.tripflow.user.repository.UserRepository;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -21,6 +24,7 @@ public class ChatService {
 
     private static final int DEFAULT_HISTORY_LIMIT = 50;
     private static final int MAX_HISTORY_LIMIT = 100;
+    private static final String FALLBACK_NAME = "Traveler";
 
     private final ChatMessageRepository chatMessageRepository;
     private final GroupMemberRepository groupMemberRepository;
@@ -37,7 +41,8 @@ public class ChatService {
                 .content(content.trim())
                 .build();
 
-        return ChatMessageResponse.from(chatMessageRepository.save(chatMessage));
+        ChatMessage saved = chatMessageRepository.save(chatMessage);
+        return ChatMessageResponse.from(saved, displayName(user));
     }
 
     @Transactional(readOnly = true)
@@ -51,7 +56,28 @@ public class ChatService {
 
         List<ChatMessage> chronological = new ArrayList<>(newestFirst);
         Collections.reverse(chronological);
-        return ChatMessageResponse.from(chronological);
+        return toResponses(chronological);
+    }
+
+    private List<ChatMessageResponse> toResponses(List<ChatMessage> messages) {
+        if (messages.isEmpty()) {
+            return List.of();
+        }
+        Set<Long> senderIds = messages.stream().map(ChatMessage::getSenderUserId).collect(Collectors.toSet());
+        Map<Long, String> namesById = userRepository.findAllById(senderIds).stream()
+                .collect(Collectors.toMap(User::getId, this::displayName));
+
+        return messages.stream()
+                .map(message -> ChatMessageResponse.from(
+                        message, namesById.getOrDefault(message.getSenderUserId(), FALLBACK_NAME)))
+                .toList();
+    }
+
+    private String displayName(User user) {
+        if (user.getName() == null || user.getName().isBlank()) {
+            return FALLBACK_NAME;
+        }
+        return user.getName().trim();
     }
 
     private User requireUser(String userEmail) {

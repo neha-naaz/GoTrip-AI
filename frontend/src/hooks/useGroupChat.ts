@@ -37,6 +37,9 @@ function parseChatMessage(raw: string): ChatMessage | null {
       id: parsed.id,
       groupId: parsed.groupId,
       senderUserId: parsed.senderUserId,
+      senderName: typeof parsed.senderName === "string" && parsed.senderName.trim()
+        ? parsed.senderName.trim()
+        : `Traveler #${parsed.senderUserId}`,
       content: parsed.content,
       createdAt: parsed.createdAt,
     }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import { Pencil, Plus, Rocket, Trash2 } from "lucide-react"
+import { Pencil, Plus, Rocket, Trash2, Users } from "lucide-react"
 import { ApiError } from "@/api/client"
 import { deleteAgencyTrip, listAgencyTrips, publishAgencyTrip } from "@/api/agencyTrips"
 import type { Trip } from "@/api/types"
@@ -176,14 +176,25 @@ export function AgencyTripsPage() {
                 ) : null}
 
                 {trip.status === "PUBLISHED" ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-2xl"
-                    render={<Link to={`/trips/${trip.id}`} />}
-                  >
-                    View public page
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-2xl"
+                      render={<Link to={`/agency/trips/${trip.id}/travelers`} />}
+                    >
+                      <Users className="size-3.5" />
+                      Travelers
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-2xl"
+                      render={<Link to={`/trips/${trip.id}`} />}
+                    >
+                      View public page
+                    </Button>
+                  </>
                 ) : null}
 
                 {(trip.status === "DRAFT" || trip.status === "PUBLISHED") && (
