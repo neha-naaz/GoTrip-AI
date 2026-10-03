@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom"
 import { MapPin } from "lucide-react"
 import type { Trip } from "@/api/types"
-import { formatTripDateRange, formatTripMoney, tripImageForDestination } from "@/lib/trip-display"
+import { formatTripDateRange, formatTripMoney, tripCoverUrl } from "@/lib/trip-display"
 
 type TripCardProps = {
   trip: Trip
@@ -12,7 +12,7 @@ type TripCardProps = {
  * Parent pages pass a Trip object; this component only displays it.
  */
 export function TripCard({ trip }: TripCardProps) {
-  const imageUrl = tripImageForDestination(trip.destination)
+  const imageUrl = tripCoverUrl(trip)
 
   return (
     <Link

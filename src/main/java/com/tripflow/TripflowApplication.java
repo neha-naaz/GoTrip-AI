@@ -2,6 +2,9 @@ package com.tripflow;
 
 import com.tripflow.auth.security.JwtProperties;
 import com.tripflow.booking.config.BookingProperties;
+import com.tripflow.common.config.CorsProperties;
+import com.tripflow.common.config.DemoProperties;
+import com.tripflow.media.config.MediaProperties;
 import com.tripflow.payment.config.PaymentProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -9,7 +12,14 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@EnableConfigurationProperties({JwtProperties.class, PaymentProperties.class, BookingProperties.class})
+@EnableConfigurationProperties({
+        JwtProperties.class,
+        PaymentProperties.class,
+        BookingProperties.class,
+        DemoProperties.class,
+        CorsProperties.class,
+        MediaProperties.class
+})
 @EnableScheduling
 public class TripflowApplication {
 

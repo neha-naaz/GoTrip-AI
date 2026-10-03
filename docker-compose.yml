@@ -26,7 +26,18 @@ services:
       TRIPFLOW_JWT_SECRET: KdB1K7rGNM1S4xP9yP8Yv1qGhT6uZ7aE5rN2cH0jL3Q=
       TRIPFLOW_JWT_EXPIRATION_MS: "86400000"
       TRIPFLOW_PAYMENT_WEBHOOK_SECRET: local-dev-secret
+      TRIPFLOW_DEMO_AUTO_VERIFY_AGENCIES: "true"
+      TRIPFLOW_CORS_ALLOWED_ORIGINS: http://localhost:5173,http://localhost:3000
+      TRIPFLOW_MEDIA_ROOT_DIR: /app/data/media
       SPRING_DEVTOOLS_RESTART_ENABLED: "false"
+    volumes:
+      - tripflow_media:/app/data/media
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
     depends_on:
       db:
         condition: service_healthy
@@ -43,3 +54,4 @@ services:
 
 volumes:
   tripflow_pgdata:
+  tripflow_media:

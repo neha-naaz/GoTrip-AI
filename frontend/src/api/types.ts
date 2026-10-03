@@ -42,6 +42,16 @@ export type LoginPayload = {
   password: string
 }
 
+export type TripImageSource = "UPLOAD" | "URL" | "WEB" | "AI"
+
+export type TripImage = {
+  id: number
+  url: string
+  sourceType: TripImageSource
+  sortOrder: number
+  cover: boolean
+}
+
 export type Trip = {
   id: number
   agencyId: number
@@ -56,6 +66,7 @@ export type Trip = {
   capacity: number
   status: string
   createdAt: string
+  coverImageUrl?: string | null
 }
 
 export type TripItinerary = {
@@ -72,6 +83,7 @@ export type TripItem = {
 
 /** Matches backend TripDetailResponse */
 export type TripDetail = Trip & {
+  images?: TripImage[]
   itineraries: TripItinerary[]
   inclusions: TripItem[]
   exclusions: TripItem[]
@@ -97,6 +109,19 @@ export type CreateTripPayload = {
   price: number
   bookingAmount: number
   capacity: number
+}
+
+/** Matches backend UpdateTripRequest (PATCH — only send fields to change) */
+export type UpdateTripPayload = {
+  title?: string
+  description?: string
+  source?: string
+  destination?: string
+  startDate?: string
+  endDate?: string
+  price?: number
+  bookingAmount?: number
+  capacity?: number
 }
 
 /** Matches backend BookingResponse */

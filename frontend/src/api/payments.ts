@@ -1,5 +1,5 @@
 import { apiRequest } from "@/api/client"
-import type { ConfirmWebhookRequest, Payment } from "@/api/types"
+import type { Payment } from "@/api/types"
 
 export function initiatePay(bookingId: number) {
   return apiRequest<Payment>(`/api/bookings/${bookingId}/pay`, {
@@ -12,31 +12,16 @@ export function listPayments(bookingId: number) {
 }
 
 /**
- * Dev/sandbox helper: simulates the payment provider calling our webhook.
- * Real Razorpay would hit this endpoint from their servers.
+ * Sandbox demo: authenticated confirm (no webhook secret in the browser).
+ * Real providers should call POST /api/payments/webhook from their servers.
  */
-export function confirmWebhook(payload: ConfirmWebhookRequest) {
-  const secret = import.meta.env.VITE_PAYMENT_WEBHOOK_SECRET ?? "local-dev-secret"
-
-  return apiRequest<void>(
-    "/api/payments/webhook",
-    {
-      method: "POST",
-      headers: {
-        "X-Tripflow-Webhook-Secret": secret,
-      },
-      body: JSON.stringify(payload),
-    },
-    false,
-  )
+export function sandboxConfirm(bookingId: number) {
+  return apiRequest<Payment>(`/api/bookings/${bookingId}/sandbox-confirm`, {
+    method: "POST",
+  })
 }
 
-/** Full sandbox pay: initiate → webhook SUCCESS */
-export async function payAndConfirm(bookingId: number): Promise<Payment> {
-  const payment = await initiatePay(bookingId)
-  await confirmWebhook({
-    providerRef: payment.providerRef,
-    status: "SUCCESS",
-  })
-  return payment
+/** Full sandbox pay flow for the UI */
+export function payAndConfirm(bookingId: number): Promise<Payment> {
+  return sandboxConfirm(bookingId)
 }

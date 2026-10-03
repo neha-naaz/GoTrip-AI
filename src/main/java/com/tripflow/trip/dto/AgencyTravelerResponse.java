@@ -1,16 +1,7 @@
 package com.tripflow.trip.dto;
 
 import java.time.Instant;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 
-@Getter
-@AllArgsConstructor
-public class AgencyTravelerResponse {
+public record AgencyTravelerResponse(Long bookingId, Long userId, String name, String email, Instant bookedAt) {
 
-    private final Long bookingId;
-    private final Long userId;
-    private final String name;
-    private final String email;
-    private final Instant bookedAt;
 }

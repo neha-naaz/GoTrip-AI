@@ -3,6 +3,7 @@ package com.tripflow.trip.service;
 import com.tripflow.agency.entity.AgencyProfile;
 import com.tripflow.agency.repository.AgencyProfileRepository;
 import com.tripflow.trip.dto.TripDetailResponse;
+import com.tripflow.trip.dto.TripImageResponse;
 import com.tripflow.trip.dto.TripItemRequest;
 import com.tripflow.trip.dto.TripItemResponse;
 import com.tripflow.trip.dto.TripItineraryRequest;
@@ -42,6 +43,7 @@ public class TripContentService {
     private final UserRepository userRepository;
     private final AgencyProfileRepository agencyProfileRepository;
     private final TripStateValidator tripStateValidator;
+    private final TripImageService tripImageService;
 
     // ---- Itinerary ----
 
@@ -161,8 +163,10 @@ public class TripContentService {
         Trip trip = tripRepository.findByIdAndStatus(tripId, TripStatus.PUBLISHED)
                 .orElseThrow(() -> new TripNotFoundException(tripId));
 
+        List<TripImageResponse> images = tripImageService.listPublicImages(tripId);
         return TripDetailResponse.from(
                 trip,
+                images,
                 tripItineraryRepository.findByTripIdOrderByDayNumberAsc(tripId),
                 tripInclusionRepository.findByTripIdOrderByIdAsc(tripId),
                 tripExclusionRepository.findByTripIdOrderByIdAsc(tripId)

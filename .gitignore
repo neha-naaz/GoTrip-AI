@@ -31,3 +31,14 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Env / secrets ###
+.env
+.env.local
+frontend/.env
+frontend/.env.local
+*.pem
+
+### Local uploaded media ###
+data/media/
+

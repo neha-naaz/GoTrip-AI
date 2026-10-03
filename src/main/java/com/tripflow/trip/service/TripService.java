@@ -45,6 +45,7 @@ public class TripService {
     private final BookingRepository bookingRepository;
     private final TripWriteValidator tripWriteValidator;
     private final TripStateValidator tripStateValidator;
+    private final TripImageService tripImageService;
 
     @Transactional
     public TripResponse createDraft(String userEmail, CreateTripRequest request) {
@@ -54,7 +55,7 @@ public class TripService {
         Trip trip = Trip.builder().agencyId(agency.getId()).status(TripStatus.DRAFT).build();
         applyWritableFields(trip, request);
 
-        return TripResponse.from(tripRepository.save(trip));
+        return toResponse(tripRepository.save(trip));
     }
 
     @Transactional
@@ -65,7 +66,7 @@ public class TripService {
 
         applyPartialFields(trip, request);
         tripWriteValidator.validateTrip(trip);
-        return TripResponse.from(tripRepository.save(trip));
+        return toResponse(tripRepository.save(trip));
     }
 
     @Transactional
@@ -94,13 +95,13 @@ public class TripService {
         tripStateValidator.requireDraft(trip, "published");
 
         trip.setStatus(TripStatus.PUBLISHED);
-        return TripResponse.from(tripRepository.save(trip));
+        return toResponse(tripRepository.save(trip));
     }
 
     @Transactional(readOnly = true)
     public List<TripResponse> listAgencyTrips(String userEmail) {
         AgencyProfile agency = requireAgencyProfile(userEmail);
-        return TripResponse.from(tripRepository.findByAgencyIdOrderByCreatedAtDesc(agency.getId()));
+        return toResponses(tripRepository.findByAgencyIdOrderByCreatedAtDesc(agency.getId()));
     }
 
     @Transactional(readOnly = true)
@@ -138,7 +139,7 @@ public class TripService {
 
     @Transactional(readOnly = true)
     public List<TripResponse> listAllPublishedTrips() {
-        return TripResponse.from(tripRepository.findByStatusOrderByStartDateAsc(TripStatus.PUBLISHED));
+        return toResponses(tripRepository.findByStatusOrderByStartDateAsc(TripStatus.PUBLISHED));
     }
 
     @Transactional(readOnly = true)
@@ -154,7 +155,7 @@ public class TripService {
         LocalDate from = startDateFrom != null ? startDateFrom : LocalDate.EPOCH;
         LocalDate to = startDateTo != null ? startDateTo : LocalDate.EPOCH;
 
-        return TripResponse.from(tripRepository.searchPublished(
+        return toResponses(tripRepository.searchPublished(
                 TripStatus.PUBLISHED,
                 sourceFilter,
                 destinationFilter,
@@ -162,6 +163,15 @@ public class TripService {
                 from,
                 startDateTo != null,
                 to));
+    }
+
+    private TripResponse toResponse(Trip trip) {
+        return TripResponse.from(trip, tripImageService.coverUrlForTrip(trip.getId()));
+    }
+
+    private List<TripResponse> toResponses(List<Trip> trips) {
+        List<Long> ids = trips.stream().map(Trip::getId).toList();
+        return TripResponse.from(trips, tripImageService.coverUrlsForTrips(ids));
     }
 
     private void applyWritableFields(Trip trip, TripWritable request) {

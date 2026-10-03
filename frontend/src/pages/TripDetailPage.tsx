@@ -6,8 +6,9 @@ import { ApiError } from "@/api/client"
 import { getTrip } from "@/api/trips"
 import type { TripDetail } from "@/api/types"
 import { useAuth } from "@/auth/AuthContext"
+import { TripCoverCarousel } from "@/components/trips/TripCoverCarousel"
 import { Button } from "@/components/ui/button"
-import { formatTripDateRange, formatTripMoney, tripImageForDestination } from "@/lib/trip-display"
+import { formatTripDateRange, formatTripMoney } from "@/lib/trip-display"
 
 export function TripDetailPage() {
   const { tripId } = useParams()
@@ -83,26 +84,24 @@ export function TripDetailPage() {
     )
   }
 
-  const imageUrl = tripImageForDestination(trip.destination)
-
   return (
     <div>
-      <section className="relative isolate min-h-[48vh] overflow-hidden">
-        <img src={imageUrl} alt={trip.destination} className="absolute inset-0 size-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/15" />
-        <div className="relative mx-auto flex min-h-[48vh] max-w-6xl flex-col justify-end px-4 pb-10 pt-20 sm:px-6">
-          <Link to="/trips" className="mb-4 inline-flex w-fit items-center gap-2 text-sm text-white/80 hover:text-white">
-            <ArrowLeft className="size-4" />
-            Explore
-          </Link>
-          <h1 className="max-w-3xl text-3xl font-semibold tracking-tight text-white sm:text-5xl">
-            {trip.title}
-          </h1>
-          <p className="mt-3 text-base text-white/85">
-            {trip.source} → {trip.destination}
-          </p>
-        </div>
-      </section>
+      <TripCoverCarousel
+        destination={trip.destination}
+        coverImageUrl={trip.coverImageUrl}
+        images={trip.images}
+      >
+        <Link to="/trips" className="mb-4 inline-flex w-fit items-center gap-2 text-sm text-white/80 hover:text-white">
+          <ArrowLeft className="size-4" />
+          Explore
+        </Link>
+        <h1 className="max-w-3xl text-3xl font-semibold tracking-tight text-white sm:text-5xl">
+          {trip.title}
+        </h1>
+        <p className="mt-3 text-base text-white/85">
+          {trip.source} → {trip.destination}
+        </p>
+      </TripCoverCarousel>
 
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 lg:grid-cols-[1.4fr_0.8fr] sm:px-6">
         <div className="space-y-10">

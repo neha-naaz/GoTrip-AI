@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,5 +33,11 @@ public class BookingController {
     @GetMapping("/me")
     public ResponseEntity<List<BookingResponse>> listMyBookings(@AuthenticationPrincipal UserDetails principal) {
         return ResponseEntity.ok(bookingService.listMyBookings(principal.getUsername()));
+    }
+
+    @PostMapping("/{bookingId}/cancel")
+    public ResponseEntity<BookingResponse> cancel(@AuthenticationPrincipal UserDetails principal,
+            @PathVariable Long bookingId) {
+        return ResponseEntity.ok(bookingService.cancel(principal.getUsername(), bookingId));
     }
 }

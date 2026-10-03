@@ -6,13 +6,24 @@ Group travel marketplace: agencies publish trips, travelers book and pay a depos
 
 - Backend: Java 21, Spring Boot 3.5, Postgres, Flyway, JWT, STOMP WebSocket
 - Frontend: React + Vite + TypeScript (nginx in Docker)
+- Tests: JUnit + MockMvc + Zonky embedded Postgres
+
+## Architecture (short)
+
+Modular monolith under `com.tripflow.*`:
+
+`auth` → `agency` / `user` → `trip` → `booking` → `payment` → `group` → `chat`
+
+Happy path:
+
+```text
+Agency draft + content → publish → customer books (seat hold)
+→ sandbox/webhook pay → CONFIRMED → group membership → chat
+```
 
 ## Run full stack with Docker Compose
 
 ```bash
-# Stop any old manual Postgres container on :5433 if needed:
-# docker stop tripflow-postgres
-
 docker compose up --build
 ```
 
@@ -20,9 +31,10 @@ docker compose up --build
 |---------|-----|
 | Web UI | http://localhost:3000 |
 | API | http://localhost:8080 |
+| Health | http://localhost:8080/api/health |
 | Postgres (host) | localhost:5433 (`tripflow` / `tripflow`) |
 
-The browser talks to the API at `http://localhost:8080` (baked into the FE image at build time). Containers talk to each other on the Compose network (`db`, `api`).
+Copy `.env.example` / `frontend/.env.example` when you need local overrides. Do not commit real secrets.
 
 ## Frontend local dev (hot reload)
 
@@ -33,11 +45,58 @@ cd frontend && npm install && npm run dev
 
 Vite: http://localhost:5173 — set `VITE_API_BASE_URL=http://localhost:8080` in `frontend/.env` if needed.
 
+## Demo walkthrough (local)
+
+Local/compose sets `tripflow.demo.auto-verify-agencies=true` so agencies can publish without an admin step.
+
+1. **Register agency** → Create trip → Edit content (basics + itinerary) → Publish  
+2. **Register customer** → Explore trips (optional date filter) → Book  
+3. **My bookings** → Pay booking amount (sandbox confirm) → Open group chat  
+4. As agency → Travelers roster on the trip  
+
+Demo accounts (create via Register UI or `POST /api/auth/register`):
+
+| Role | Email | Password |
+|------|-------|----------|
+| Agency | `demo.agency@tripflow.local` | `password1` |
+| Customer | `demo.customer@tripflow.local` | `password1` |
+
+## What’s mocked
+
+- **Payments:** `MockPaymentProvider` + authenticated `POST /api/bookings/{id}/sandbox-confirm` for the UI. Provider-style webhook remains at `POST /api/payments/webhook` with `X-Tripflow-Webhook-Secret`.
+- **Agency verification:** auto-verified in local/demo; set `TRIPFLOW_DEMO_AUTO_VERIFY_AGENCIES=false` for production-like behavior.
+
+## Intentionally locked
+
+After publish (especially with bookings): no unpublish / free edit of itinerary, inclusions, or exclusions. Drafts remain fully editable.
+
+## Tests
+
+```bash
+./mvnw test
+```
+
+Critical-path ITs: register → publish → book → pay → group member, capacity conflict, webhook idempotency, cancel pending booking.
+
+CI runs backend tests + frontend build on push/PR (`.github/workflows/ci.yml`).
+
 ## Smoke
 
 ```bash
+curl http://localhost:8080/api/health
 curl http://localhost:8080/api/trips
 curl -I http://localhost:3000
 ```
 
-Expect API `200` JSON and web `200` HTML.
+Expect health `{"status":"UP"}`, trips JSON, and web `200` HTML.
+
+## Deploy notes
+
+When hosting, set at least:
+
+- `SPRING_DATASOURCE_*` → managed Postgres  
+- `TRIPFLOW_JWT_SECRET` → long random secret  
+- `TRIPFLOW_PAYMENT_WEBHOOK_SECRET`  
+- `TRIPFLOW_CORS_ALLOWED_ORIGINS` → your public frontend origin(s)  
+- `TRIPFLOW_DEMO_AUTO_VERIFY_AGENCIES=false`  
+- Frontend build arg / env: `VITE_API_BASE_URL` → public API URL  

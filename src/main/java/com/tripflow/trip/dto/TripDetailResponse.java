@@ -29,15 +29,19 @@ public class TripDetailResponse {
     private final int capacity;
     private final TripStatus status;
     private final Instant createdAt;
+    private final String coverImageUrl;
+    private final List<TripImageResponse> images;
     private final List<TripItineraryResponse> itineraries;
     private final List<TripItemResponse> inclusions;
     private final List<TripItemResponse> exclusions;
 
     public static TripDetailResponse from(
             Trip trip,
+            List<TripImageResponse> images,
             List<TripItinerary> itineraries,
             List<TripInclusion> inclusions,
             List<TripExclusion> exclusions) {
+        String cover = images.isEmpty() ? null : images.getFirst().getUrl();
         return new TripDetailResponse(
                 trip.getId(),
                 trip.getAgencyId(),
@@ -52,6 +56,8 @@ public class TripDetailResponse {
                 trip.getCapacity(),
                 trip.getStatus(),
                 trip.getCreatedAt(),
+                cover,
+                images,
                 TripItineraryResponse.from(itineraries),
                 TripItemResponse.fromInclusions(inclusions),
                 TripItemResponse.fromExclusions(exclusions)

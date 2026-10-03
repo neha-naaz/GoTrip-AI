@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { CreditCard, MapPin, MessageCircle } from "lucide-react"
+import { CreditCard, MapPin, MessageCircle, X } from "lucide-react"
 import { ApiError } from "@/api/client"
-import { listMyBookings } from "@/api/booking"
+import { cancelBooking, listMyBookings } from "@/api/booking"
 import { payAndConfirm } from "@/api/payments"
 import { getTrip } from "@/api/trips"
 import type { Booking, Trip } from "@/api/types"
@@ -32,6 +32,7 @@ export function BookingsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [payingId, setPayingId] = useState<number | null>(null)
+  const [cancellingId, setCancellingId] = useState<number | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
 
   async function load() {
@@ -86,6 +87,19 @@ export function BookingsPage() {
     }
   }
 
+  async function onCancel(bookingId: number) {
+    setActionError(null)
+    setCancellingId(bookingId)
+    try {
+      await cancelBooking(bookingId)
+      await load()
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Could not cancel booking")
+    } finally {
+      setCancellingId(null)
+    }
+  }
+
   if (user?.role !== "CUSTOMER") {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6">
@@ -105,7 +119,7 @@ export function BookingsPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-semibold tracking-tight">My bookings</h1>
         <p className="mt-2 text-muted-foreground">
-          Pay pending bookings to confirm your seat. Sandbox payment simulates the provider webhook.
+          Pay pending bookings to confirm your seat, or cancel to free the hold. Sandbox payment is demo-only.
         </p>
       </div>
 
@@ -169,14 +183,25 @@ export function BookingsPage() {
                 </div>
 
                 {booking.status === "PENDING_PAYMENT" ? (
-                  <Button
-                    className="mt-5 h-11 rounded-2xl"
-                    disabled={payingId === booking.id}
-                    onClick={() => void onPay(booking.id)}
-                  >
-                    <CreditCard className="size-4" />
-                    {payingId === booking.id ? "Processing…" : "Pay booking amount"}
-                  </Button>
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <Button
+                      className="h-11 rounded-2xl"
+                      disabled={payingId === booking.id || cancellingId === booking.id}
+                      onClick={() => void onPay(booking.id)}
+                    >
+                      <CreditCard className="size-4" />
+                      {payingId === booking.id ? "Processing…" : "Pay booking amount"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-11 rounded-2xl"
+                      disabled={payingId === booking.id || cancellingId === booking.id}
+                      onClick={() => void onCancel(booking.id)}
+                    >
+                      <X className="size-4" />
+                      {cancellingId === booking.id ? "Cancelling…" : "Cancel hold"}
+                    </Button>
+                  </div>
                 ) : null}
 
                 {booking.status === "CONFIRMED" ? (

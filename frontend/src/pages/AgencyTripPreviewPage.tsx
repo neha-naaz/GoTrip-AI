@@ -3,11 +3,13 @@ import { Link, useParams } from "react-router-dom"
 import { ArrowLeft, CalendarDays, Pencil, Users } from "lucide-react"
 import { ApiError } from "@/api/client"
 import { listAgencyTrips } from "@/api/agencyTrips"
+import { listTripImages } from "@/api/tripImages"
 import { listExclusions, listInclusions, listItineraries } from "@/api/tripContent"
-import type { Trip, TripItinerary, TripItem } from "@/api/types"
+import type { Trip, TripImage, TripItinerary, TripItem } from "@/api/types"
 import { useAuth } from "@/auth/AuthContext"
+import { TripCoverCarousel } from "@/components/trips/TripCoverCarousel"
 import { Button } from "@/components/ui/button"
-import { formatTripDateRange, formatTripMoney, tripImageForDestination } from "@/lib/trip-display"
+import { formatTripDateRange, formatTripMoney } from "@/lib/trip-display"
 
 export function AgencyTripPreviewPage() {
   const { tripId } = useParams()
@@ -18,6 +20,7 @@ export function AgencyTripPreviewPage() {
   const [itineraries, setItineraries] = useState<TripItinerary[]>([])
   const [inclusions, setInclusions] = useState<TripItem[]>([])
   const [exclusions, setExclusions] = useState<TripItem[]>([])
+  const [images, setImages] = useState<TripImage[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -43,16 +46,18 @@ export function AgencyTripPreviewPage() {
           return
         }
 
-        const [days, incl, excl] = await Promise.all([
+        const [days, incl, excl, photos] = await Promise.all([
           listItineraries(id),
           listInclusions(id),
           listExclusions(id),
+          listTripImages(id),
         ])
         if (cancelled) return
         setTrip(found)
         setItineraries(days)
         setInclusions(incl)
         setExclusions(excl)
+        setImages(photos)
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof ApiError ? err.message : "Could not load preview")
@@ -98,8 +103,6 @@ export function AgencyTripPreviewPage() {
     )
   }
 
-  const imageUrl = tripImageForDestination(trip.destination)
-
   return (
     <div>
       <div className="border-b border-border bg-amber-50 px-4 py-3 text-center text-sm text-amber-900 sm:px-6">
@@ -114,25 +117,25 @@ export function AgencyTripPreviewPage() {
         ) : null}
       </div>
 
-      <section className="relative isolate min-h-[48vh] overflow-hidden">
-        <img src={imageUrl} alt={trip.destination} className="absolute inset-0 size-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/15" />
-        <div className="relative mx-auto flex min-h-[48vh] max-w-6xl flex-col justify-end px-4 pb-10 pt-20 sm:px-6">
-          <Link
-            to="/agency/trips"
-            className="mb-4 inline-flex w-fit items-center gap-2 text-sm text-white/80 hover:text-white"
-          >
-            <ArrowLeft className="size-4" />
-            My trips
-          </Link>
-          <h1 className="max-w-3xl text-3xl font-semibold tracking-tight text-white sm:text-5xl">
-            {trip.title}
-          </h1>
-          <p className="mt-3 text-base text-white/85">
-            {trip.source} → {trip.destination}
-          </p>
-        </div>
-      </section>
+      <TripCoverCarousel
+        destination={trip.destination}
+        coverImageUrl={trip.coverImageUrl ?? images.find((img) => img.cover)?.url}
+        images={images}
+      >
+        <Link
+          to="/agency/trips"
+          className="mb-4 inline-flex w-fit items-center gap-2 text-sm text-white/80 hover:text-white"
+        >
+          <ArrowLeft className="size-4" />
+          My trips
+        </Link>
+        <h1 className="max-w-3xl text-3xl font-semibold tracking-tight text-white sm:text-5xl">
+          {trip.title}
+        </h1>
+        <p className="mt-3 text-base text-white/85">
+          {trip.source} → {trip.destination}
+        </p>
+      </TripCoverCarousel>
 
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 lg:grid-cols-[1.4fr_0.8fr] sm:px-6">
         <div className="space-y-10">

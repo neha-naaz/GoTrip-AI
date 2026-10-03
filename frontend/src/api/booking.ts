@@ -11,3 +11,9 @@ export function createBooking(payload: CreateBookingRequest) {
 export function listMyBookings() {
   return apiRequest<Booking[]>("/api/bookings/me")
 }
+
+export function cancelBooking(bookingId: number) {
+  return apiRequest<Booking>(`/api/bookings/${bookingId}/cancel`, {
+    method: "POST",
+  })
+}

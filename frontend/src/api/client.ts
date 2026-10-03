@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080"
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080"
 
 export class ApiError extends Error {
   status: number
@@ -14,6 +14,25 @@ export class ApiError extends Error {
 
 function getStoredToken(): string | null {
   return localStorage.getItem("tripflow_token")
+}
+
+async function parseResponse<T>(response: Response): Promise<T> {
+  if (response.status === 204) {
+    return undefined as T
+  }
+
+  const text = await response.text()
+  const data = text ? JSON.parse(text) : null
+
+  if (!response.ok) {
+    const message =
+      (data && typeof data === "object" && "message" in data && String(data.message)) ||
+      (data && typeof data === "object" && "detail" in data && String(data.detail)) ||
+      `Request failed (${response.status})`
+    throw new ApiError(response.status, message, data)
+  }
+
+  return data as T
 }
 
 export async function apiRequest<T>(
@@ -39,20 +58,30 @@ export async function apiRequest<T>(
     headers,
   })
 
-  if (response.status === 204) {
-    return undefined as T
+  return parseResponse<T>(response)
+}
+
+/** Multipart upload — do not set Content-Type (browser sets boundary). */
+export async function apiUpload<T>(path: string, formData: FormData): Promise<T> {
+  const headers = new Headers()
+  const token = getStoredToken()
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`)
   }
 
-  const text = await response.text()
-  const data = text ? JSON.parse(text) : null
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    headers,
+    body: formData,
+  })
 
-  if (!response.ok) {
-    const message =
-      (data && typeof data === "object" && "message" in data && String(data.message)) ||
-      (data && typeof data === "object" && "detail" in data && String(data.detail)) ||
-      `Request failed (${response.status})`
-    throw new ApiError(response.status, message, data)
-  }
+  return parseResponse<T>(response)
+}
 
-  return data as T
+/** Resolve stored image URLs (relative /api/media/... or absolute https). */
+export function resolveMediaUrl(url: string | null | undefined): string | null {
+  if (!url) return null
+  if (url.startsWith("http://") || url.startsWith("https://")) return url
+  if (url.startsWith("/")) return `${API_BASE_URL}${url}`
+  return url
 }

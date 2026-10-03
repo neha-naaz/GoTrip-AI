@@ -2,7 +2,9 @@ import { useState, type FormEvent } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { ApiError } from "@/api/client"
 import { createAgencyTrip } from "@/api/agencyTrips"
+import type { Trip } from "@/api/types"
 import { useAuth } from "@/auth/AuthContext"
+import { TripImageGalleryEditor } from "@/components/trips/TripImageGalleryEditor"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -35,6 +37,7 @@ export function CreateTripPage() {
   const [capacity, setCapacity] = useState("12")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [createdTrip, setCreatedTrip] = useState<Trip | null>(null)
 
   if (user?.role !== "AGENCY") {
     return (
@@ -63,7 +66,7 @@ export function CreateTripPage() {
         bookingAmount: Number(bookingAmount),
         capacity: Number(capacity),
       })
-      navigate(`/agency/trips/${trip.id}/edit`)
+      setCreatedTrip(trip)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not create trip")
     } finally {
@@ -71,12 +74,43 @@ export function CreateTripPage() {
     }
   }
 
+  if (createdTrip) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-8 px-4 py-10 sm:px-6">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Draft saved</h1>
+          <p className="mt-2 text-muted-foreground">
+            Add photos now, then continue to itinerary and inclusions.
+          </p>
+        </div>
+
+        <TripImageGalleryEditor tripId={createdTrip.id} />
+
+        <div className="flex flex-wrap gap-3">
+          <Button
+            className="h-11 rounded-2xl"
+            onClick={() => navigate(`/agency/trips/${createdTrip.id}/edit`)}
+          >
+            Continue to trip content
+          </Button>
+          <Button
+            variant="outline"
+            className="h-11 rounded-2xl"
+            render={<Link to="/agency/trips" />}
+          >
+            Back to my trips
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
       <div className="mb-8">
         <h1 className="text-3xl font-semibold tracking-tight">Create a trip</h1>
         <p className="mt-2 text-muted-foreground">
-          Saves as a draft. Publish later once your agency is verified.
+          Saves as a draft. You can add photos right after saving.
         </p>
       </div>
 
@@ -144,7 +178,13 @@ export function CreateTripPage() {
                   type="date"
                   required
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={(e) => {
+                    const next = e.target.value
+                    setStartDate(next)
+                    if (endDate && next && endDate < next) {
+                      setEndDate(next)
+                    }
+                  }}
                   className="h-11 rounded-2xl"
                 />
               </div>
@@ -154,6 +194,7 @@ export function CreateTripPage() {
                   id="endDate"
                   type="date"
                   required
+                  min={startDate || undefined}
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   className="h-11 rounded-2xl"
@@ -206,7 +247,7 @@ export function CreateTripPage() {
 
             <div className="flex flex-wrap gap-3 pt-2">
               <Button type="submit" className="h-11 rounded-2xl" disabled={loading}>
-                {loading ? "Saving…" : "Save draft"}
+                {loading ? "Saving…" : "Save draft & add photos"}
               </Button>
               <Button
                 type="button"

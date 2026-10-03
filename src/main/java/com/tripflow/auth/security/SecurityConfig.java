@@ -35,7 +35,9 @@ public class SecurityConfig {
                         authorizeRequests
                                 .requestMatchers("/api/auth/register").permitAll()
                                 .requestMatchers("/api/auth/login").permitAll()
+                                .requestMatchers("/api/health", "/actuator/health").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/trips", "/api/trips/*").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/media/**").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/api/payments/webhook").permitAll()
                                 .requestMatchers("/ws", "/ws/**").permitAll()
                                 .anyRequest().authenticated())

@@ -78,6 +78,34 @@ public class PaymentService {
     }
 
     /**
+     * Demo helper: initiate (or reuse CREATED payment) then confirm SUCCESS without a webhook secret.
+     * Authenticated customers only — not a substitute for a real provider callback in production.
+     */
+    @Transactional
+    public PaymentResponse sandboxConfirm(String userEmail, Long bookingId) {
+        User user = userRepository.findByEmailAndRole(userEmail, UserRole.CUSTOMER)
+                .orElseThrow(() -> new ForbiddenException("Only customers can make payments"));
+
+        bookingRepository.findByIdAndUserId(bookingId, user.getId())
+                .orElseThrow(() -> new BookingNotFoundException(bookingId));
+
+        Payment existingCreated = paymentRepository.findByBookingIdOrderByCreatedAtDesc(bookingId).stream()
+                .filter(payment -> payment.getStatus() == PaymentStatus.CREATED)
+                .findFirst()
+                .orElse(null);
+
+        String providerRef = existingCreated != null
+                ? existingCreated.getProviderRef()
+                : initiatePayment(userEmail, bookingId).getProviderRef();
+
+        handleWebhook(providerRef, PaymentStatus.SUCCESS);
+
+        Payment confirmed = paymentRepository.findByProviderRef(providerRef)
+                .orElseThrow(() -> new PaymentNotFoundException(providerRef));
+        return PaymentResponse.from(confirmed);
+    }
+
+    /**
      * Provider callback — idempotent on SUCCESS. Only CREATED payments can transition.
      */
     @Transactional

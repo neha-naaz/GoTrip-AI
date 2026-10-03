@@ -14,6 +14,7 @@ import com.tripflow.trip.exception.DuplicateItineraryDayException;
 import com.tripflow.trip.exception.ForbiddenException;
 import com.tripflow.trip.exception.InvalidTripStateException;
 import com.tripflow.trip.exception.TripDeletionNotAllowedException;
+import com.tripflow.trip.exception.TripImageLimitException;
 import com.tripflow.trip.exception.TripNotFoundException;
 import com.tripflow.trip.exception.TripRulesInvalidException;
 import java.util.HashMap;
@@ -109,6 +110,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(TripDeletionNotAllowedException.class)
     public ResponseEntity<ProblemDetail> handleTripDeletionNotAllowed(TripDeletionNotAllowedException exception) {
         return problem(HttpStatus.CONFLICT, "Trip deletion not allowed", exception.getMessage());
+    }
+
+    @ExceptionHandler(TripImageLimitException.class)
+    public ResponseEntity<ProblemDetail> handleTripImageLimit(TripImageLimitException exception) {
+        return problem(HttpStatus.CONFLICT, "Trip image limit", exception.getMessage());
     }
 
     @ExceptionHandler(TripFullException.class)

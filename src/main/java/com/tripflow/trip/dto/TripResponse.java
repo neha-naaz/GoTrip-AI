@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -26,8 +27,13 @@ public class TripResponse {
     private final int capacity;
     private final TripStatus status;
     private final Instant createdAt;
+    private final String coverImageUrl;
 
     public static TripResponse from(Trip trip) {
+        return from(trip, null);
+    }
+
+    public static TripResponse from(Trip trip, String coverImageUrl) {
         return new TripResponse(
                 trip.getId(),
                 trip.getAgencyId(),
@@ -41,11 +47,14 @@ public class TripResponse {
                 trip.getBookingAmount(),
                 trip.getCapacity(),
                 trip.getStatus(),
-                trip.getCreatedAt()
+                trip.getCreatedAt(),
+                coverImageUrl
         );
     }
 
-    public static List<TripResponse> from(List<Trip> trips) {
-        return trips.stream().map(TripResponse::from).toList();
+    public static List<TripResponse> from(List<Trip> trips, Map<Long, String> coverByTripId) {
+        return trips.stream()
+                .map(trip -> from(trip, coverByTripId.get(trip.getId())))
+                .toList();
     }
 }

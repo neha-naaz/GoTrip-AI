@@ -97,6 +97,12 @@ export function DateRangePicker({
                 selected={selected}
                 defaultMonth={selected?.from ?? selected?.to}
                 numberOfMonths={1}
+                disabled={
+                  // After start is picked, gray out days before it for the end pick
+                  selected?.from && !selected?.to
+                    ? [{ before: selected.from }]
+                    : undefined
+                }
                 onSelect={(range) => {
                   onChange({
                     from: toIso(range?.from),

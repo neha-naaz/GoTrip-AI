@@ -5,6 +5,7 @@ import com.tripflow.booking.dto.CreateBookingRequest;
 import com.tripflow.booking.entity.Booking;
 import com.tripflow.booking.entity.BookingStatus;
 import com.tripflow.booking.exception.BookingNotAllowedException;
+import com.tripflow.booking.exception.BookingNotFoundException;
 import com.tripflow.booking.exception.TripFullException;
 import com.tripflow.booking.repository.BookingRepository;
 import com.tripflow.trip.entity.Trip;
@@ -67,5 +68,24 @@ public class BookingService {
         return bookingRepository.findByUserIdOrderByCreatedAtDesc(user.getId()).stream()
                 .map(BookingResponse::from)
                 .toList();
+    }
+
+    /**
+     * Customer cancels a seat hold before payment succeeds. Confirmed bookings stay locked.
+     */
+    @Transactional
+    public BookingResponse cancel(String userEmail, Long bookingId) {
+        User user = userRepository.findByEmailAndRole(userEmail, UserRole.CUSTOMER)
+                .orElseThrow(() -> new ForbiddenException("Only customers can cancel bookings"));
+
+        Booking booking = bookingRepository.findByIdAndUserId(bookingId, user.getId())
+                .orElseThrow(() -> new BookingNotFoundException(bookingId));
+
+        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            throw new BookingNotAllowedException("Only pending payment bookings can be cancelled");
+        }
+
+        booking.setStatus(BookingStatus.CANCELLED);
+        return BookingResponse.from(bookingRepository.save(booking));
     }
 }

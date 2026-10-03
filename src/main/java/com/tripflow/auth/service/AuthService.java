@@ -1,11 +1,13 @@
 package com.tripflow.auth.service;
 
 import com.tripflow.agency.entity.AgencyProfile;
+import com.tripflow.agency.entity.VerificationStatus;
 import com.tripflow.agency.repository.AgencyProfileRepository;
 import com.tripflow.auth.dto.AuthResponse;
 import com.tripflow.auth.dto.LoginRequest;
 import com.tripflow.auth.dto.RegisterRequest;
 import com.tripflow.auth.security.JwtService;
+import com.tripflow.common.config.DemoProperties;
 import com.tripflow.common.exception.AccountNotActiveException;
 import com.tripflow.common.exception.EmailAlreadyExistsException;
 import com.tripflow.common.exception.InvalidRegistrationException;
@@ -31,6 +33,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final DemoProperties demoProperties;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -57,6 +60,9 @@ public class AuthService {
             AgencyProfile agencyProfile = new AgencyProfile();
             agencyProfile.setUserId(user.getId());
             agencyProfile.setAgencyName(agencyName);
+            if (demoProperties.isAutoVerifyAgencies()) {
+                agencyProfile.setVerificationStatus(VerificationStatus.VERIFIED);
+            }
             agencyProfileRepository.save(agencyProfile);
         }
 

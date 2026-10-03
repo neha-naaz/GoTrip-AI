@@ -2,7 +2,8 @@ import { useEffect, useState, type FormEvent } from "react"
 import { Link, Navigate, useParams } from "react-router-dom"
 import { ArrowLeft, Eye, Pencil, Plus, Trash2 } from "lucide-react"
 import { ApiError } from "@/api/client"
-import { listAgencyTrips } from "@/api/agencyTrips"
+import { listAgencyTrips, updateAgencyTrip } from "@/api/agencyTrips"
+import { TripImageGalleryEditor } from "@/components/trips/TripImageGalleryEditor"
 import {
   createExclusion,
   createInclusion,
@@ -59,6 +60,16 @@ export function AgencyTripEditPage() {
   const [editingExclusionId, setEditingExclusionId] = useState<number | null>(null)
   const [editExclusionText, setEditExclusionText] = useState("")
 
+  const [metaTitle, setMetaTitle] = useState("")
+  const [metaDescription, setMetaDescription] = useState("")
+  const [metaSource, setMetaSource] = useState("")
+  const [metaDestination, setMetaDestination] = useState("")
+  const [metaStartDate, setMetaStartDate] = useState("")
+  const [metaEndDate, setMetaEndDate] = useState("")
+  const [metaPrice, setMetaPrice] = useState("")
+  const [metaBookingAmount, setMetaBookingAmount] = useState("")
+  const [metaCapacity, setMetaCapacity] = useState("")
+
   const canEdit = trip?.status === "DRAFT"
 
   async function load() {
@@ -85,6 +96,15 @@ export function AgencyTripEditPage() {
         listExclusions(id),
       ])
       setTrip(found)
+      setMetaTitle(found.title)
+      setMetaDescription(found.description ?? "")
+      setMetaSource(found.source)
+      setMetaDestination(found.destination)
+      setMetaStartDate(found.startDate)
+      setMetaEndDate(found.endDate)
+      setMetaPrice(String(found.price))
+      setMetaBookingAmount(String(found.bookingAmount))
+      setMetaCapacity(String(found.capacity))
       setItineraries(days)
       setInclusions(incl)
       setExclusions(excl)
@@ -116,6 +136,25 @@ export function AgencyTripEditPage() {
     } finally {
       setBusy(false)
     }
+  }
+
+  async function onSaveTripDetails(event: FormEvent) {
+    event.preventDefault()
+    if (!canEdit) return
+    await runAction(async () => {
+      const updated = await updateAgencyTrip(id, {
+        title: metaTitle.trim(),
+        description: metaDescription.trim() || undefined,
+        source: metaSource.trim(),
+        destination: metaDestination.trim(),
+        startDate: metaStartDate,
+        endDate: metaEndDate,
+        price: Number(metaPrice),
+        bookingAmount: Number(metaBookingAmount),
+        capacity: Number(metaCapacity),
+      })
+      setTrip(updated)
+    })
   }
 
   async function onAddItinerary(event: FormEvent) {
@@ -288,7 +327,7 @@ export function AgencyTripEditPage() {
       </div>
 
       <p className="mb-6 text-sm text-muted-foreground">
-        Add itinerary days and what’s included before you publish.
+        Edit trip basics, itinerary, and inclusions before you publish. Published trips stay locked.
       </p>
 
       {actionError ? (
@@ -296,6 +335,144 @@ export function AgencyTripEditPage() {
           {actionError}
         </p>
       ) : null}
+
+      <div className="mb-10">
+        <TripImageGalleryEditor tripId={trip.id} disabled={!canEdit || busy} />
+      </div>
+
+      <section className="mb-10 space-y-4">
+        <h2 className="text-xl font-semibold tracking-tight">Trip details</h2>
+        <form
+          onSubmit={onSaveTripDetails}
+          className="space-y-3 rounded-2xl border border-border bg-card p-4"
+        >
+          <div className="space-y-1.5">
+            <Label htmlFor="metaTitle">Title</Label>
+            <Input
+              id="metaTitle"
+              value={metaTitle}
+              onChange={(e) => setMetaTitle(e.target.value)}
+              className="h-10 rounded-2xl"
+              required
+              disabled={busy}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="metaDescription">Description</Label>
+            <textarea
+              id="metaDescription"
+              value={metaDescription}
+              onChange={(e) => setMetaDescription(e.target.value)}
+              rows={3}
+              disabled={busy}
+              className="w-full rounded-2xl border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="metaSource">From</Label>
+              <Input
+                id="metaSource"
+                value={metaSource}
+                onChange={(e) => setMetaSource(e.target.value)}
+                className="h-10 rounded-2xl"
+                required
+                disabled={busy}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="metaDestination">To</Label>
+              <Input
+                id="metaDestination"
+                value={metaDestination}
+                onChange={(e) => setMetaDestination(e.target.value)}
+                className="h-10 rounded-2xl"
+                required
+                disabled={busy}
+              />
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="metaStart">Start</Label>
+              <Input
+                id="metaStart"
+                type="date"
+                value={metaStartDate}
+                onChange={(e) => {
+                  const next = e.target.value
+                  setMetaStartDate(next)
+                  if (metaEndDate && next && metaEndDate < next) {
+                    setMetaEndDate(next)
+                  }
+                }}
+                className="h-10 rounded-2xl"
+                required
+                disabled={busy}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="metaEnd">End</Label>
+              <Input
+                id="metaEnd"
+                type="date"
+                min={metaStartDate || undefined}
+                value={metaEndDate}
+                onChange={(e) => setMetaEndDate(e.target.value)}
+                className="h-10 rounded-2xl"
+                required
+                disabled={busy}
+              />
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="metaPrice">Price</Label>
+              <Input
+                id="metaPrice"
+                type="number"
+                min={1}
+                step="0.01"
+                value={metaPrice}
+                onChange={(e) => setMetaPrice(e.target.value)}
+                className="h-10 rounded-2xl"
+                required
+                disabled={busy}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="metaBooking">Booking amount</Label>
+              <Input
+                id="metaBooking"
+                type="number"
+                min={1}
+                step="0.01"
+                value={metaBookingAmount}
+                onChange={(e) => setMetaBookingAmount(e.target.value)}
+                className="h-10 rounded-2xl"
+                required
+                disabled={busy}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="metaCapacity">Capacity</Label>
+              <Input
+                id="metaCapacity"
+                type="number"
+                min={1}
+                value={metaCapacity}
+                onChange={(e) => setMetaCapacity(e.target.value)}
+                className="h-10 rounded-2xl"
+                required
+                disabled={busy}
+              />
+            </div>
+          </div>
+          <Button type="submit" className="rounded-2xl" disabled={busy}>
+            Save trip details
+          </Button>
+        </form>
+      </section>
 
       <section className="mb-10 space-y-4">
         <h2 className="text-xl font-semibold tracking-tight">Itinerary</h2>

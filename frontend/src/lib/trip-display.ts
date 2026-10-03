@@ -1,6 +1,8 @@
+import { resolveMediaUrl } from "@/api/client"
+import type { Trip } from "@/api/types"
+
 /**
- * V1 has no trip image uploads yet.
- * We pick a stable Unsplash photo from the destination name so cards look image-heavy.
+ * Fallback Unsplash photo from destination when the trip has no cover image yet.
  */
 const DESTINATION_IMAGES: Record<string, string> = {
   manali: "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=1200&q=80",
@@ -13,6 +15,10 @@ const DESTINATION_IMAGES: Record<string, string> = {
 export function tripImageForDestination(destination: string): string {
   const key = destination.trim().toLowerCase()
   return DESTINATION_IMAGES[key] ?? DESTINATION_IMAGES.default
+}
+
+export function tripCoverUrl(trip: Pick<Trip, "destination" | "coverImageUrl">): string {
+  return resolveMediaUrl(trip.coverImageUrl) ?? tripImageForDestination(trip.destination)
 }
 
 export function formatTripMoney(amount: number): string {
