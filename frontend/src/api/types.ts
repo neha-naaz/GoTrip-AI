@@ -148,6 +148,10 @@ export type Payment = {
   status: PaymentStatus
   provider: string
   providerRef: string
+  /** Present for Razorpay Checkout */
+  checkoutKeyId?: string | null
+  amountPaise?: number | null
+  currency?: string | null
 }
 
 export type ConfirmWebhookRequest = {

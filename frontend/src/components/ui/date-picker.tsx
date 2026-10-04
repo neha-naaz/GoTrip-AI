@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Popover } from "@base-ui/react/popover"
-import { format, parseISO, isValid } from "date-fns"
+import { format, parseISO, isValid, startOfDay } from "date-fns"
 import { CalendarDays, X } from "lucide-react"
 import { DayPicker } from "react-day-picker"
 import { Button } from "@/components/ui/button"
@@ -85,6 +85,7 @@ export function DatePicker({
                 selected={selected}
                 defaultMonth={selected}
                 disabled={[
+                  { before: startOfDay(new Date()) },
                   ...(minDate ? [{ before: minDate }] : []),
                   ...(maxDate ? [{ after: maxDate }] : []),
                 ]}

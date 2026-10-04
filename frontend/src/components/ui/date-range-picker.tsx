@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Popover } from "@base-ui/react/popover"
-import { format, parseISO, isValid } from "date-fns"
+import { format, parseISO, isValid, startOfDay } from "date-fns"
 import { CalendarDays, X } from "lucide-react"
 import { DayPicker, type DateRange } from "react-day-picker"
 import { Button } from "@/components/ui/button"
@@ -97,12 +97,11 @@ export function DateRangePicker({
                 selected={selected}
                 defaultMonth={selected?.from ?? selected?.to}
                 numberOfMonths={1}
-                disabled={
+                disabled={[
+                  { before: startOfDay(new Date()) },
                   // After start is picked, gray out days before it for the end pick
-                  selected?.from && !selected?.to
-                    ? [{ before: selected.from }]
-                    : undefined
-                }
+                  ...(selected?.from && !selected?.to ? [{ before: selected.from }] : []),
+                ]}
                 onSelect={(range) => {
                   onChange({
                     from: toIso(range?.from),

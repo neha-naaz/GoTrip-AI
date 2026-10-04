@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -86,11 +87,29 @@ public final class ApiFixtures {
 
         long tripId = objectMapper.readTree(create.getResponse().getContentAsString()).path("id").asLong();
 
+        addRequiredItinerary(agencyToken, tripId, start, end);
+
         mockMvc.perform(post("/api/agency/trips/" + tripId + "/publish")
                         .header("Authorization", "Bearer " + agencyToken))
                 .andExpect(status().isOk());
 
         return tripId;
+    }
+
+    public void addRequiredItinerary(String agencyToken, long tripId, LocalDate start, LocalDate end)
+            throws Exception {
+        int lengthDays = (int) ChronoUnit.DAYS.between(start, end) + 1;
+        for (int day = 1; day <= lengthDays; day++) {
+            ObjectNode itinerary = objectMapper.createObjectNode()
+                    .put("dayNumber", day)
+                    .put("title", "Day " + day)
+                    .put("description", "IT itinerary");
+            mockMvc.perform(post("/api/agency/trips/" + tripId + "/itineraries")
+                            .header("Authorization", "Bearer " + agencyToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(itinerary)))
+                    .andExpect(status().isCreated());
+        }
     }
 
     public long bookTrip(String customerToken, long tripId) throws Exception {

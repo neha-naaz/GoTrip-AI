@@ -1,8 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react"
 import { Link, Navigate, useParams } from "react-router-dom"
-import { ArrowLeft, Eye, Pencil, Plus, Trash2 } from "lucide-react"
+import { ArrowLeft, Eye, Pencil, Plus, Rocket, Trash2 } from "lucide-react"
 import { ApiError } from "@/api/client"
-import { listAgencyTrips, updateAgencyTrip } from "@/api/agencyTrips"
+import { listAgencyTrips, publishAgencyTrip, updateAgencyTrip } from "@/api/agencyTrips"
 import { TripImageGalleryEditor } from "@/components/trips/TripImageGalleryEditor"
 import {
   createExclusion,
@@ -21,13 +21,37 @@ import {
 import type { Trip, TripItinerary, TripItem } from "@/api/types"
 import { useAuth } from "@/auth/AuthContext"
 import { Button } from "@/components/ui/button"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { formatTripDateRange, itineraryDayLabel, isOptionalItineraryDay, tripLengthDays } from "@/lib/trip-display"
 
 function statusStyles(status: string) {
   if (status === "PUBLISHED") return "bg-emerald-50 text-emerald-800"
   if (status === "DRAFT") return "bg-amber-50 text-amber-800"
   return "bg-zinc-100 text-zinc-600"
+}
+
+function localTodayIso() {
+  const d = new Date()
+  const month = String(d.getMonth() + 1).padStart(2, "0")
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${d.getFullYear()}-${month}-${day}`
+}
+
+function nextMissingTripDay(
+  days: { dayNumber: number }[],
+  startDate: string,
+  endDate: string,
+): number {
+  const length = tripLengthDays(startDate, endDate)
+  const existing = new Set(days.map((d) => d.dayNumber))
+  for (let day = 1; day <= length; day++) {
+    if (!existing.has(day)) return day
+  }
+  const extras = days.map((d) => d.dayNumber).filter((n) => n > length)
+  const nextExtra = extras.length === 0 ? length + 1 : Math.max(...extras) + 1
+  return existing.has(0) ? nextExtra : 0
 }
 
 export function AgencyTripEditPage() {
@@ -43,6 +67,7 @@ export function AgencyTripEditPage() {
   const [error, setError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [publishOpen, setPublishOpen] = useState(false)
 
   const [dayNumber, setDayNumber] = useState("1")
   const [dayTitle, setDayTitle] = useState("")
@@ -110,7 +135,7 @@ export function AgencyTripEditPage() {
       setExclusions(excl)
       const nextDay =
         days.length === 0 ? 1 : Math.max(...days.map((d) => d.dayNumber)) + 1
-      setDayNumber(String(nextDay))
+      setDayNumber(String(nextMissingTripDay(days, found.startDate, found.endDate)))
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not load trip content")
     } finally {
@@ -157,6 +182,15 @@ export function AgencyTripEditPage() {
     })
   }
 
+  async function onPublish() {
+    if (!canEdit) return
+    await runAction(async () => {
+      const published = await publishAgencyTrip(id)
+      setPublishOpen(false)
+      setTrip(published)
+    })
+  }
+
   async function onAddItinerary(event: FormEvent) {
     event.preventDefault()
     if (!canEdit) return
@@ -169,7 +203,7 @@ export function AgencyTripEditPage() {
       setItineraries((prev) =>
         [...prev, created].sort((a, b) => a.dayNumber - b.dayNumber),
       )
-      setDayNumber(String(created.dayNumber + 1))
+      setDayNumber(String(nextMissingTripDay([...itineraries, created], trip.startDate, trip.endDate)))
       setDayTitle("")
       setDayDescription("")
     })
@@ -293,6 +327,14 @@ export function AgencyTripEditPage() {
     return <Navigate to={`/agency/trips/${trip.id}/preview`} replace />
   }
 
+  const lengthDays = tripLengthDays(trip.startDate, trip.endDate)
+  const existingDays = new Set(itineraries.map((day) => day.dayNumber))
+  const missingDays = Array.from({ length: lengthDays }, (_, i) => i + 1).filter(
+    (day) => !existingDays.has(day),
+  )
+  const hasDayZero = existingDays.has(0)
+  const itineraryReady = missingDays.length === 0
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
       <Link
@@ -322,6 +364,15 @@ export function AgencyTripEditPage() {
           >
             <Eye className="size-3.5" />
             Preview
+          </Button>
+          <Button
+            size="sm"
+            className="rounded-2xl"
+            disabled={busy || !itineraryReady}
+            onClick={() => setPublishOpen(true)}
+          >
+            <Rocket className="size-3.5" />
+            Publish
           </Button>
         </div>
       </div>
@@ -398,6 +449,7 @@ export function AgencyTripEditPage() {
               <Input
                 id="metaStart"
                 type="date"
+                min={localTodayIso()}
                 value={metaStartDate}
                 onChange={(e) => {
                   const next = e.target.value
@@ -416,7 +468,11 @@ export function AgencyTripEditPage() {
               <Input
                 id="metaEnd"
                 type="date"
-                min={metaStartDate || undefined}
+                min={
+                  metaStartDate && metaStartDate > localTodayIso()
+                    ? metaStartDate
+                    : localTodayIso()
+                }
                 value={metaEndDate}
                 onChange={(e) => setMetaEndDate(e.target.value)}
                 className="h-10 rounded-2xl"
@@ -476,6 +532,19 @@ export function AgencyTripEditPage() {
 
       <section className="mb-10 space-y-4">
         <h2 className="text-xl font-semibold tracking-tight">Itinerary</h2>
+        <p className="text-sm text-muted-foreground">
+          This trip is {lengthDays} days ({formatTripDateRange(trip.startDate, trip.endDate)}).
+          Add days 1–{lengthDays} to publish. Day 0 (travel/prep) and days after {lengthDays} are optional extras.
+        </p>
+        {missingDays.length > 0 ? (
+          <p className="text-sm text-amber-800">
+            Still needed: {missingDays.map((day) => `Day ${day}`).join(", ")}
+          </p>
+        ) : (
+          <p className="text-sm text-emerald-800">
+            All {lengthDays} trip days are filled. You can still add Day 0 or extra days.
+          </p>
+        )}
 
         {canEdit ? (
           <form
@@ -488,7 +557,7 @@ export function AgencyTripEditPage() {
                 <Input
                   id="dayNumber"
                   type="number"
-                  min={1}
+                  min={0}
                   value={dayNumber}
                   onChange={(e) => setDayNumber(e.target.value)}
                   className="h-10 rounded-2xl"
@@ -502,7 +571,7 @@ export function AgencyTripEditPage() {
                   value={dayTitle}
                   onChange={(e) => setDayTitle(e.target.value)}
                   className="h-10 rounded-2xl"
-                  placeholder="Arrival & check-in"
+                  placeholder={Number(dayNumber) === 0 ? "Reach destination / packing" : "Arrival & check-in"}
                   required
                 />
               </div>
@@ -514,13 +583,33 @@ export function AgencyTripEditPage() {
                 value={dayDescription}
                 onChange={(e) => setDayDescription(e.target.value)}
                 className="h-10 rounded-2xl"
-                placeholder="Optional details"
+                placeholder={
+                  Number(dayNumber) === 0
+                    ? "How to reach, meeting point, what to pack…"
+                    : "Optional details"
+                }
               />
             </div>
-            <Button type="submit" className="rounded-2xl" disabled={busy || !dayTitle.trim()}>
-              <Plus className="size-4" />
-              Add day
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button type="submit" className="rounded-2xl" disabled={busy || !dayTitle.trim()}>
+                <Plus className="size-4" />
+                Add day
+              </Button>
+              {!hasDayZero ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-2xl"
+                  disabled={busy}
+                  onClick={() => {
+                    setDayNumber("0")
+                    if (!dayTitle.trim()) setDayTitle("Travel to destination")
+                  }}
+                >
+                  Add Day 0
+                </Button>
+              ) : null}
+            </div>
           </form>
         ) : null}
 
@@ -528,14 +617,23 @@ export function AgencyTripEditPage() {
           <p className="text-sm text-muted-foreground">No itinerary days yet.</p>
         ) : (
           <ul className="space-y-3">
-            {itineraries.map((item) => (
-              <li key={item.id} className="rounded-2xl border border-border bg-card p-4">
+            {itineraries.map((item) => {
+                const extra = isOptionalItineraryDay(item.dayNumber, lengthDays)
+                return (
+              <li
+                key={item.id}
+                className={
+                  extra
+                    ? "rounded-2xl border border-dashed border-amber-200 bg-amber-50/80 p-4"
+                    : "rounded-2xl border border-border bg-card p-4"
+                }
+              >
                 {editingItineraryId === item.id ? (
                   <div className="space-y-3">
                     <div className="grid gap-3 sm:grid-cols-[100px_1fr]">
                       <Input
                         type="number"
-                        min={1}
+                        min={0}
                         value={editDayNumber}
                         onChange={(e) => setEditDayNumber(e.target.value)}
                         className="h-10 rounded-2xl"
@@ -574,8 +672,11 @@ export function AgencyTripEditPage() {
                   <div className="flex items-start gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="font-medium">
-                        Day {item.dayNumber}: {item.title}
+                        {itineraryDayLabel(item.dayNumber, lengthDays)}: {item.title}
                       </p>
+                      {extra ? (
+                        <p className="mt-1 text-xs font-medium text-amber-800/80">Optional extra</p>
+                      ) : null}
                       {item.description ? (
                         <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
                       ) : null}
@@ -611,7 +712,8 @@ export function AgencyTripEditPage() {
                   </div>
                 )}
               </li>
-            ))}
+                )
+            })}
           </ul>
         )}
       </section>
@@ -672,7 +774,25 @@ export function AgencyTripEditPage() {
           <Eye className="size-4" />
           Preview
         </Button>
+        <Button
+          className="rounded-2xl"
+          disabled={busy || !itineraryReady}
+          onClick={() => setPublishOpen(true)}
+        >
+          <Rocket className="size-4" />
+          Publish
+        </Button>
       </div>
+
+      <ConfirmDialog
+        open={publishOpen}
+        onOpenChange={setPublishOpen}
+        title="Publish this trip?"
+        description="Travelers will be able to see and book it. You will not be able to edit photos or itinerary after publishing."
+        confirmLabel="Publish"
+        confirmDisabled={busy}
+        onConfirm={() => void onPublish()}
+      />
     </div>
   )
 }

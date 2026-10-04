@@ -16,6 +16,7 @@ import com.tripflow.trip.entity.TripStatus;
 import com.tripflow.trip.exception.AgencyProfileNotFoundException;
 import com.tripflow.trip.exception.DuplicateItineraryDayException;
 import com.tripflow.trip.exception.ForbiddenException;
+import com.tripflow.trip.exception.InvalidTripStateException;
 import com.tripflow.trip.exception.TripNotFoundException;
 import com.tripflow.trip.repository.TripExclusionRepository;
 import com.tripflow.trip.repository.TripInclusionRepository;
@@ -50,6 +51,7 @@ public class TripContentService {
     @Transactional
     public TripItineraryResponse createItinerary(String userEmail, Long tripId, TripItineraryRequest request) {
         Trip trip = requireOwnedDraftTrip(userEmail, tripId);
+        assertDayInRange(request.getDayNumber());
         assertUniqueDay(trip.getId(), request.getDayNumber(), null);
 
         TripItinerary itinerary = TripItinerary.builder()
@@ -73,6 +75,7 @@ public class TripContentService {
             String userEmail, Long tripId, Long itineraryId, TripItineraryRequest request) {
         Trip trip = requireOwnedDraftTrip(userEmail, tripId);
         TripItinerary itinerary = requireItinerary(itineraryId, trip.getId());
+        assertDayInRange(request.getDayNumber());
         assertUniqueDay(trip.getId(), request.getDayNumber(), itineraryId);
 
         itinerary.setDayNumber(request.getDayNumber());
@@ -194,6 +197,13 @@ public class TripContentService {
         Trip trip = requireOwnedTrip(userEmail, tripId);
         tripStateValidator.requireDraft(trip, "modified");
         return trip;
+    }
+
+    private void assertDayInRange(int dayNumber) {
+        if (dayNumber < 0) {
+            throw new InvalidTripStateException(
+                    "Itinerary day must be 0 or greater (0 = optional travel/prep; days after the trip dates are extra)");
+        }
     }
 
     private void assertUniqueDay(Long tripId, int dayNumber, Long excludeItineraryId) {

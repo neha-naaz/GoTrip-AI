@@ -19,7 +19,10 @@ import com.tripflow.trip.exception.ForbiddenException;
 import com.tripflow.trip.exception.TripDeletionNotAllowedException;
 import com.tripflow.trip.exception.TripNotFoundException;
 import com.tripflow.trip.exception.TripRulesInvalidException;
+import com.tripflow.trip.exception.InvalidTripStateException;
+import com.tripflow.trip.repository.TripItineraryRepository;
 import com.tripflow.trip.repository.TripRepository;
+import com.tripflow.trip.validation.TripCalendar;
 import com.tripflow.trip.validation.TripStateValidator;
 import com.tripflow.trip.validation.TripWriteValidator;
 import com.tripflow.user.entity.User;
@@ -29,6 +32,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -46,6 +50,7 @@ public class TripService {
     private final TripWriteValidator tripWriteValidator;
     private final TripStateValidator tripStateValidator;
     private final TripImageService tripImageService;
+    private final TripItineraryRepository tripItineraryRepository;
 
     @Transactional
     public TripResponse createDraft(String userEmail, CreateTripRequest request) {
@@ -93,6 +98,7 @@ public class TripService {
 
         Trip trip = requireOwnedTrip(tripId, agency.getId());
         tripStateValidator.requireDraft(trip, "published");
+        requireCompleteItinerary(trip);
 
         trip.setStatus(TripStatus.PUBLISHED);
         return toResponse(tripRepository.save(trip));
@@ -238,6 +244,20 @@ public class TripService {
     private Trip requireOwnedTrip(Long tripId, Long agencyId) {
         return tripRepository.findById(tripId).filter(trip -> Objects.equals(trip.getAgencyId(), agencyId))
                 .orElseThrow(() -> new TripNotFoundException(tripId));
+    }
+
+    private void requireCompleteItinerary(Trip trip) {
+        int length = TripCalendar.lengthDays(trip.getStartDate(), trip.getEndDate());
+        Set<Integer> days = tripItineraryRepository.findByTripIdOrderByDayNumberAsc(trip.getId()).stream()
+                .map(item -> item.getDayNumber())
+                .collect(Collectors.toSet());
+        for (int day = 1; day <= length; day++) {
+            if (!days.contains(day)) {
+                throw new InvalidTripStateException(
+                        "Add itinerary days 1–" + length
+                                + " to match the trip dates. Day 0 is optional for travel or prep.");
+            }
+        }
     }
 
     private void requireVerifiedAgency(AgencyProfile agency) {

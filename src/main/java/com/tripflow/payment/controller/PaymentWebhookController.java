@@ -19,10 +19,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class PaymentWebhookController {
 
     public static final String WEBHOOK_SECRET_HEADER = "X-Tripflow-Webhook-Secret";
+    public static final String RAZORPAY_SIGNATURE_HEADER = "X-Razorpay-Signature";
 
     private final PaymentService paymentService;
     private final PaymentProperties paymentProperties;
 
+    /**
+     * Mock / internal webhook used by tests and local tooling.
+     */
     @PostMapping("/webhook")
     public ResponseEntity<Void> handleWebhook(
             @RequestHeader(value = WEBHOOK_SECRET_HEADER, required = false) String secret,
@@ -31,6 +35,17 @@ public class PaymentWebhookController {
             throw new WebhookUnauthorizedException();
         }
         paymentService.handleWebhook(request.getProviderRef(), request.getStatus());
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Razorpay dashboard webhook. Signature verified with the webhook secret.
+     */
+    @PostMapping("/razorpay/webhook")
+    public ResponseEntity<Void> handleRazorpayWebhook(
+            @RequestHeader(value = RAZORPAY_SIGNATURE_HEADER, required = false) String signature,
+            @RequestBody String rawBody) {
+        paymentService.handleProviderWebhook(rawBody, signature);
         return ResponseEntity.ok().build();
     }
 }

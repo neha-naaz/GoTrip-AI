@@ -6,6 +6,7 @@ import { deleteAgencyTrip, listAgencyTrips, publishAgencyTrip } from "@/api/agen
 import type { Trip } from "@/api/types"
 import { useAuth } from "@/auth/AuthContext"
 import { Button } from "@/components/ui/button"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { formatTripDateRange, formatTripMoney } from "@/lib/trip-display"
 
 function statusStyles(status: string) {
@@ -21,6 +22,8 @@ export function AgencyTripsPage() {
   const [error, setError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<number | null>(null)
+  const [publishTrip, setPublishTrip] = useState<Trip | null>(null)
+  const [deleteTrip, setDeleteTrip] = useState<Trip | null>(null)
 
   async function load() {
     setLoading(true)
@@ -43,13 +46,16 @@ export function AgencyTripsPage() {
     void load()
   }, [user?.role])
 
-  async function onPublish(tripId: number) {
+  async function onPublish() {
+    if (!publishTrip) return
     setActionError(null)
-    setBusyId(tripId)
+    setBusyId(publishTrip.id)
     try {
-      await publishAgencyTrip(tripId)
+      await publishAgencyTrip(publishTrip.id)
+      setPublishTrip(null)
       await load()
     } catch (err) {
+      setPublishTrip(null)
       setActionError(
         err instanceof ApiError
           ? err.message
@@ -60,13 +66,16 @@ export function AgencyTripsPage() {
     }
   }
 
-  async function onDelete(tripId: number) {
+  async function onDelete() {
+    if (!deleteTrip) return
     setActionError(null)
-    setBusyId(tripId)
+    setBusyId(deleteTrip.id)
     try {
-      await deleteAgencyTrip(tripId)
+      await deleteAgencyTrip(deleteTrip.id)
+      setDeleteTrip(null)
       await load()
     } catch (err) {
+      setDeleteTrip(null)
       setActionError(err instanceof ApiError ? err.message : "Delete failed")
     } finally {
       setBusyId(null)
@@ -167,7 +176,7 @@ export function AgencyTripsPage() {
                       size="sm"
                       className="rounded-2xl"
                       disabled={busyId === trip.id}
-                      onClick={() => void onPublish(trip.id)}
+                      onClick={() => setPublishTrip(trip)}
                     >
                       <Rocket className="size-3.5" />
                       {busyId === trip.id ? "Publishing…" : "Publish"}
@@ -203,7 +212,7 @@ export function AgencyTripsPage() {
                     size="sm"
                     className="rounded-2xl"
                     disabled={busyId === trip.id}
-                    onClick={() => void onDelete(trip.id)}
+                    onClick={() => setDeleteTrip(trip)}
                   >
                     <Trash2 className="size-3.5" />
                     Delete
@@ -214,6 +223,42 @@ export function AgencyTripsPage() {
           ))}
         </ul>
       ) : null}
+
+      <ConfirmDialog
+        open={publishTrip != null}
+        onOpenChange={(open) => {
+          if (!open) setPublishTrip(null)
+        }}
+        title="Publish this trip?"
+        description={
+          publishTrip
+            ? `“${publishTrip.title}” will appear on Explore and travelers can book it. You will not be able to edit photos or itinerary after publishing.`
+            : "Travelers will be able to see and book it. You will not be able to edit photos or itinerary after publishing."
+        }
+        confirmLabel="Publish"
+        confirmDisabled={busyId != null}
+        onConfirm={() => void onPublish()}
+      />
+      <ConfirmDialog
+        open={deleteTrip != null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTrip(null)
+        }}
+        title="Delete this trip?"
+        description={
+          deleteTrip
+            ? `“${deleteTrip.title}” will be removed. ${
+                deleteTrip.status === "PUBLISHED"
+                  ? "Published trips with bookings cannot be deleted."
+                  : "This cannot be undone."
+              }`
+            : "This cannot be undone."
+        }
+        confirmLabel="Delete"
+        confirmVariant="destructive"
+        confirmDisabled={busyId != null}
+        onConfirm={() => void onDelete()}
+      />
     </div>
   )
 }

@@ -29,6 +29,22 @@ export function formatTripMoney(amount: number): string {
   }).format(amount)
 }
 
+export function tripLengthDays(startDate: string, endDate: string): number {
+  const start = new Date(`${startDate}T00:00:00`)
+  const end = new Date(`${endDate}T00:00:00`)
+  return Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1
+}
+
+export function isOptionalItineraryDay(dayNumber: number, tripLength: number): boolean {
+  return dayNumber === 0 || dayNumber > tripLength
+}
+
+export function itineraryDayLabel(dayNumber: number, tripLength?: number): string {
+  if (dayNumber === 0) return "Day 0 · Travel / prep"
+  if (tripLength != null && dayNumber > tripLength) return `Day ${dayNumber} · Extra`
+  return `Day ${dayNumber}`
+}
+
 export function formatTripDateRange(startDate: string, endDate: string): string {
   const start = new Date(startDate)
   const end = new Date(endDate)

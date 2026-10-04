@@ -7,8 +7,9 @@ import { getTrip } from "@/api/trips"
 import type { TripDetail } from "@/api/types"
 import { useAuth } from "@/auth/AuthContext"
 import { TripCoverCarousel } from "@/components/trips/TripCoverCarousel"
+import { TripPhotoStrip } from "@/components/trips/TripPhotoStrip"
 import { Button } from "@/components/ui/button"
-import { formatTripDateRange, formatTripMoney } from "@/lib/trip-display"
+import { formatTripDateRange, formatTripMoney, itineraryDayLabel, isOptionalItineraryDay, tripLengthDays } from "@/lib/trip-display"
 
 export function TripDetailPage() {
   const { tripId } = useParams()
@@ -89,7 +90,6 @@ export function TripDetailPage() {
       <TripCoverCarousel
         destination={trip.destination}
         coverImageUrl={trip.coverImageUrl}
-        images={trip.images}
       >
         <Link to="/trips" className="mb-4 inline-flex w-fit items-center gap-2 text-sm text-white/80 hover:text-white">
           <ArrowLeft className="size-4" />
@@ -105,6 +105,12 @@ export function TripDetailPage() {
 
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 lg:grid-cols-[1.4fr_0.8fr] sm:px-6">
         <div className="space-y-10">
+          <TripPhotoStrip
+            destination={trip.destination}
+            images={trip.images}
+            coverImageUrl={trip.coverImageUrl}
+          />
+
           <section>
             <h2 className="text-xl font-semibold tracking-tight">About this trip</h2>
             <p className="mt-3 whitespace-pre-wrap text-muted-foreground leading-relaxed">
@@ -118,17 +124,30 @@ export function TripDetailPage() {
               <p className="mt-3 text-sm text-muted-foreground">Itinerary coming soon.</p>
             ) : (
               <ol className="mt-4 space-y-3">
-                {trip.itineraries.map((day) => (
-                  <li key={day.id} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-                    <p className="text-xs font-medium tracking-wide text-primary uppercase">
-                      Day {day.dayNumber}
+                {trip.itineraries.map((day) => {
+                  const extra = isOptionalItineraryDay(
+                    day.dayNumber,
+                    tripLengthDays(trip.startDate, trip.endDate),
+                  )
+                  return (
+                  <li
+                    key={day.id}
+                    className={
+                      extra
+                        ? "rounded-2xl border border-dashed border-amber-200 bg-amber-50/80 p-4 shadow-sm"
+                        : "rounded-2xl border border-border bg-card p-4 shadow-sm"
+                    }
+                  >
+                    <p className={`text-xs font-medium tracking-wide uppercase ${extra ? "text-amber-800" : "text-primary"}`}>
+                      {itineraryDayLabel(day.dayNumber, tripLengthDays(trip.startDate, trip.endDate))}
                     </p>
                     <p className="mt-1 font-medium">{day.title}</p>
                     {day.description ? (
                       <p className="mt-1 text-sm text-muted-foreground">{day.description}</p>
                     ) : null}
                   </li>
-                ))}
+                  )
+                })}
               </ol>
             )}
           </section>

@@ -25,7 +25,9 @@ services:
       SPRING_DATASOURCE_PASSWORD: tripflow
       TRIPFLOW_JWT_SECRET: KdB1K7rGNM1S4xP9yP8Yv1qGhT6uZ7aE5rN2cH0jL3Q=
       TRIPFLOW_JWT_EXPIRATION_MS: "86400000"
+      TRIPFLOW_PAYMENT_PROVIDER: mock
       TRIPFLOW_PAYMENT_WEBHOOK_SECRET: local-dev-secret
+      # For Razorpay: set TRIPFLOW_PAYMENT_PROVIDER=razorpay and key envs (see .env.example)
       TRIPFLOW_DEMO_AUTO_VERIFY_AGENCIES: "true"
       TRIPFLOW_CORS_ALLOWED_ORIGINS: http://localhost:5173,http://localhost:3000
       TRIPFLOW_MEDIA_ROOT_DIR: /app/data/media

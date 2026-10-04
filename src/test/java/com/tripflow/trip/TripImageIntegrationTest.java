@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tripflow.support.AbstractIntegrationTest;
 import com.tripflow.support.ApiFixtures;
+import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,14 +41,16 @@ class TripImageIntegrationTest extends AbstractIntegrationTest {
     void uploadAndUrl_thenLockedAfterPublish() throws Exception {
         String agencyEmail = ApiFixtures.uniqueEmail("agency");
         String agencyToken = api.register("Photo Agency", agencyEmail, "AGENCY", "Photo Agency");
+        LocalDate start = LocalDate.now().plusDays(20);
+        LocalDate end = LocalDate.now().plusDays(25);
 
         ObjectNode body = objectMapper.createObjectNode()
                 .put("title", "Photo Trip")
                 .put("description", "With gallery")
                 .put("source", "Delhi")
                 .put("destination", "Goa")
-                .put("startDate", java.time.LocalDate.now().plusDays(20).toString())
-                .put("endDate", java.time.LocalDate.now().plusDays(25).toString())
+                .put("startDate", start.toString())
+                .put("endDate", end.toString())
                 .put("price", "20000.00")
                 .put("bookingAmount", "3000.00")
                 .put("capacity", 8);
@@ -80,6 +83,8 @@ class TripImageIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(urlBody)))
                 .andExpect(status().isCreated());
+
+        api.addRequiredItinerary(agencyToken, tripId, start, end);
 
         mockMvc.perform(post("/api/agency/trips/" + tripId + "/publish")
                         .header("Authorization", "Bearer " + agencyToken))

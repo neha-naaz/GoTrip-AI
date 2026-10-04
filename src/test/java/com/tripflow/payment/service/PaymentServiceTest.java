@@ -85,10 +85,13 @@ class PaymentServiceTest {
             return p;
         });
 
+        when(paymentRepository.findByBookingIdOrderByCreatedAtDesc(1L)).thenReturn(java.util.List.of());
+
         PaymentResponse response = paymentService.initiatePayment("c@test.com", 1L);
 
         assertThat(response.getStatus()).isEqualTo(PaymentStatus.CREATED);
         assertThat(response.getProviderRef()).startsWith("mock_");
+        assertThat(response.getProvider()).isEqualTo("MOCK");
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.PENDING_PAYMENT);
         verify(bookingRepository, never()).save(booking);
     }

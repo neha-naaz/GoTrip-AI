@@ -51,7 +51,7 @@ Local/compose sets `tripflow.demo.auto-verify-agencies=true` so agencies can pub
 
 1. **Register agency** → Create trip → Edit content (basics + itinerary) → Publish  
 2. **Register customer** → Explore trips (optional date filter) → Book  
-3. **My bookings** → Pay booking amount (sandbox confirm) → Open group chat  
+3. **My bookings** → Pay booking amount → Open group chat  
 4. As agency → Travelers roster on the trip  
 
 Demo accounts (create via Register UI or `POST /api/auth/register`):
@@ -61,9 +61,29 @@ Demo accounts (create via Register UI or `POST /api/auth/register`):
 | Agency | `demo.agency@tripflow.local` | `password1` |
 | Customer | `demo.customer@tripflow.local` | `password1` |
 
+## Payments
+
+`PaymentProvider` is swappable via `tripflow.payment.provider` / `TRIPFLOW_PAYMENT_PROVIDER`:
+
+| Value | Behavior |
+|-------|----------|
+| `mock` (default) | Local/demo. UI calls `POST /api/bookings/{id}/sandbox-confirm`. Tests use `POST /api/payments/webhook` + `X-Tripflow-Webhook-Secret`. |
+| `razorpay` | Creates a Razorpay Order on pay; browser opens Checkout; success confirmed via `POST /api/bookings/{id}/confirm-checkout` (signature) and/or `POST /api/payments/razorpay/webhook`. |
+
+Razorpay env (test keys from the [Razorpay Dashboard](https://dashboard.razorpay.com/)):
+
+```bash
+TRIPFLOW_PAYMENT_PROVIDER=razorpay
+TRIPFLOW_RAZORPAY_KEY_ID=rzp_test_...
+TRIPFLOW_RAZORPAY_KEY_SECRET=...
+TRIPFLOW_RAZORPAY_WEBHOOK_SECRET=...   # optional but recommended for dashboard webhooks
+```
+
+Sandbox confirm is rejected when the active provider is Razorpay.
+
 ## What’s mocked
 
-- **Payments:** `MockPaymentProvider` + authenticated `POST /api/bookings/{id}/sandbox-confirm` for the UI. Provider-style webhook remains at `POST /api/payments/webhook` with `X-Tripflow-Webhook-Secret`.
+- **Payments (default):** `MockPaymentProvider` for local/CI without gateway keys.
 - **Agency verification:** auto-verified in local/demo; set `TRIPFLOW_DEMO_AUTO_VERIFY_AGENCIES=false` for production-like behavior.
 
 ## Intentionally locked
