@@ -18,7 +18,7 @@ Happy path:
 
 ```text
 Agency draft + content → publish → customer books (seat hold)
-→ sandbox/webhook pay → CONFIRMED → group membership → chat
+→ pay (Razorpay Checkout or mock sandbox) → CONFIRMED → group membership → chat
 ```
 
 ## Run full stack with Docker Compose
@@ -74,10 +74,18 @@ Razorpay env (test keys from the [Razorpay Dashboard](https://dashboard.razorpay
 
 ```bash
 TRIPFLOW_PAYMENT_PROVIDER=razorpay
-TRIPFLOW_RAZORPAY_KEY_ID=rzp_test_...
-TRIPFLOW_RAZORPAY_KEY_SECRET=...
+RAZORPAY_KEY_ID=rzp_test_...
+RAZORPAY_KEY_SECRET=...
 TRIPFLOW_RAZORPAY_WEBHOOK_SECRET=...   # optional but recommended for dashboard webhooks
 ```
+
+Local `.env` is imported by Spring (`optional:file:.env`) and by Docker Compose. Never commit it.
+
+Checkout flow:
+
+1. `POST /api/bookings/{id}/pay` creates a Razorpay Order (`POST https://api.razorpay.com/v1/orders`) and returns `order_id` plus public `checkoutKeyId`.
+2. Frontend loads `checkout.js`, opens the modal, then sends `razorpay_payment_id`, `razorpay_order_id`, `razorpay_signature`.
+3. `POST /api/bookings/{id}/confirm-checkout` verifies HMAC-SHA256(`order_id|payment_id`, KEY_SECRET). Mismatch → 400 and the booking stays unpaid.
 
 Sandbox confirm is rejected when the active provider is Razorpay.
 

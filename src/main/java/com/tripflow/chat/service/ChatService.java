@@ -3,7 +3,7 @@ package com.tripflow.chat.service;
 import com.tripflow.chat.dto.ChatMessageResponse;
 import com.tripflow.chat.entity.ChatMessage;
 import com.tripflow.chat.repository.ChatMessageRepository;
-import com.tripflow.group.repository.GroupMemberRepository;
+import com.tripflow.group.service.GroupMembershipService;
 import com.tripflow.trip.exception.ForbiddenException;
 import com.tripflow.user.entity.User;
 import com.tripflow.user.repository.UserRepository;
@@ -27,13 +27,13 @@ public class ChatService {
     private static final String FALLBACK_NAME = "Traveler";
 
     private final ChatMessageRepository chatMessageRepository;
-    private final GroupMemberRepository groupMemberRepository;
+    private final GroupMembershipService groupMembershipService;
     private final UserRepository userRepository;
 
     @Transactional
     public ChatMessageResponse sendMessage(String userEmail, Long groupId, String content) {
         User user = requireUser(userEmail);
-        requireMembership(groupId, user.getId());
+        groupMembershipService.requireChatAccess(userEmail, groupId);
 
         ChatMessage chatMessage = ChatMessage.builder()
                 .senderUserId(user.getId())
@@ -48,7 +48,7 @@ public class ChatService {
     @Transactional(readOnly = true)
     public List<ChatMessageResponse> listHistory(String userEmail, Long groupId, Integer limit) {
         User user = requireUser(userEmail);
-        requireMembership(groupId, user.getId());
+        groupMembershipService.requireChatAccess(userEmail, groupId);
 
         int pageSize = normalizeLimit(limit);
         List<ChatMessage> newestFirst =
@@ -83,12 +83,6 @@ public class ChatService {
     private User requireUser(String userEmail) {
         return userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ForbiddenException("User not found"));
-    }
-
-    private void requireMembership(Long groupId, Long userId) {
-        if (!groupMemberRepository.existsByGroupIdAndUserId(groupId, userId)) {
-            throw new ForbiddenException("Only group members can access chat");
-        }
     }
 
     private int normalizeLimit(Integer limit) {

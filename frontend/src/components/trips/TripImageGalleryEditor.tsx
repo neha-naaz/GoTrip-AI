@@ -112,47 +112,49 @@ export function TripImageGalleryEditor({ tripId, disabled = false }: TripImageGa
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading photos…</p>
+      ) : images.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No photos yet.</p>
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {images.map((image) => {
             const src = resolveMediaUrl(image.url) ?? image.url
             return (
               <li
                 key={image.id}
-                className="overflow-hidden rounded-2xl border border-border bg-card"
+                className="group relative aspect-[4/3] overflow-hidden rounded-3xl bg-muted"
               >
-                <div className="relative aspect-[4/3] bg-muted">
-                  <img src={src} alt="" className="size-full object-cover" />
-                  {image.cover ? (
-                    <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-0.5 text-xs font-medium">
-                      Cover
-                    </span>
-                  ) : null}
-                </div>
-                <div className="flex flex-wrap gap-2 p-3">
+                <img src={src} alt="" className="size-full object-cover" />
+                {image.cover ? (
+                  <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-0.5 text-xs font-medium shadow-sm">
+                    Cover
+                  </span>
+                ) : null}
+                <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1.5 bg-gradient-to-t from-black/55 to-transparent p-2 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
                   {!image.cover ? (
                     <Button
                       type="button"
-                      size="sm"
-                      variant="outline"
-                      className="rounded-2xl"
+                      size="icon-sm"
+                      variant="secondary"
+                      className="rounded-full bg-background/95 shadow-sm"
                       disabled={!canEdit}
+                      aria-label="Make cover"
+                      title="Make cover"
                       onClick={() => void onMakeCover(image.id)}
                     >
                       <Star className="size-3.5" />
-                      Make cover
                     </Button>
                   ) : null}
                   <Button
                     type="button"
-                    size="sm"
-                    variant="outline"
-                    className="rounded-2xl"
+                    size="icon-sm"
+                    variant="secondary"
+                    className="rounded-full bg-background/95 shadow-sm"
                     disabled={!canEdit}
+                    aria-label="Remove photo"
+                    title="Remove"
                     onClick={() => void onDelete(image.id)}
                   >
                     <Trash2 className="size-3.5" />
-                    Remove
                   </Button>
                 </div>
               </li>

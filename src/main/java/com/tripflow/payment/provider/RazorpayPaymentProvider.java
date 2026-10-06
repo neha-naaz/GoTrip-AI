@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tripflow.payment.config.PaymentProperties;
 import com.tripflow.payment.entity.PaymentStatus;
+import com.tripflow.payment.exception.PaymentGatewayException;
+import com.tripflow.payment.exception.PaymentGatewayUnauthorizedException;
 import com.tripflow.payment.exception.PaymentNotAllowedException;
 import com.tripflow.payment.exception.WebhookUnauthorizedException;
 import java.math.BigDecimal;
@@ -84,9 +86,14 @@ public class RazorpayPaymentProvider implements PaymentProvider {
                     .build();
 
             HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                log.warn("Razorpay order create failed status={} body={}", response.statusCode(), response.body());
-                throw new PaymentNotAllowedException("Could not create Razorpay order");
+            int status = response.statusCode();
+            if (status == 401 || status == 403) {
+                log.warn("Razorpay order create auth failed status={}", status);
+                throw new PaymentGatewayUnauthorizedException();
+            }
+            if (status < 200 || status >= 300) {
+                log.warn("Razorpay order create failed status={} body={}", status, response.body());
+                throw new PaymentGatewayException("Could not create Razorpay order");
             }
 
             JsonNode json = objectMapper.readTree(response.body());
@@ -95,11 +102,11 @@ public class RazorpayPaymentProvider implements PaymentProvider {
                 throw new PaymentNotAllowedException("Razorpay order response missing id");
             }
             return new CreateOrderResult(orderId);
-        } catch (PaymentNotAllowedException ex) {
+        } catch (PaymentNotAllowedException | PaymentGatewayException | PaymentGatewayUnauthorizedException ex) {
             throw ex;
         } catch (Exception ex) {
             log.error("Razorpay order create error", ex);
-            throw new PaymentNotAllowedException("Could not create Razorpay order");
+            throw new PaymentGatewayException("Could not create Razorpay order");
         }
     }
 
@@ -163,7 +170,11 @@ public class RazorpayPaymentProvider implements PaymentProvider {
         if (amountInr == null || amountInr.signum() <= 0) {
             throw new PaymentNotAllowedException("Payment amount must be positive");
         }
-        return amountInr.movePointRight(2).setScale(0, RoundingMode.HALF_UP).longValueExact();
+        long paise = amountInr.movePointRight(2).setScale(0, RoundingMode.HALF_UP).longValueExact();
+        if (paise < 100) {
+            throw new PaymentNotAllowedException("Payment amount must be at least 100 paise (₹1)");
+        }
+        return paise;
     }
 
     static String hmacSha256Hex(String payload, String secret) {

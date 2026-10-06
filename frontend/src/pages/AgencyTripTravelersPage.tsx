@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useParams } from "react-router-dom"
-import { ArrowLeft, Users } from "lucide-react"
+import { ArrowLeft, MessageCircle, Users } from "lucide-react"
 import { ApiError } from "@/api/client"
 import { listAgencyTravelers, listAgencyTrips } from "@/api/agencyTrips"
 import type { AgencyTraveler, Trip } from "@/api/types"
@@ -94,15 +94,21 @@ export function AgencyTripTravelersPage() {
         My trips
       </Link>
 
-      <div className="mb-8">
-        <h1 className="text-3xl font-semibold tracking-tight">Travelers</h1>
-        <p className="mt-2 text-muted-foreground">
-          {trip.title} · {trip.source} → {trip.destination}
-        </p>
-        <p className="mt-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Users className="size-3.5" />
-          {travelers.length} confirmed
-        </p>
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Travelers</h1>
+          <p className="mt-2 text-muted-foreground">
+            {trip.title} · {trip.source} → {trip.destination}
+          </p>
+          <p className="mt-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Users className="size-3.5" />
+            {travelers.length} confirmed
+          </p>
+        </div>
+        <Button className="rounded-2xl" render={<Link to={`/trips/${trip.id}/chat`} />}>
+          <MessageCircle className="size-4" />
+          Open group chat
+        </Button>
       </div>
 
       {travelers.length === 0 ? (

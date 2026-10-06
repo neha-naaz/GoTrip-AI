@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { CreditCard, MapPin, MessageCircle, X } from "lucide-react"
 import { ApiError } from "@/api/client"
 import { cancelBooking, listMyBookings } from "@/api/booking"
-import { payAndConfirm } from "@/api/payments"
+import { payAndConfirm, PaymentCancelledError } from "@/api/payments"
 import { getTrip } from "@/api/trips"
 import type { Booking, Trip } from "@/api/types"
 import { useAuth } from "@/auth/AuthContext"
@@ -81,7 +81,11 @@ export function BookingsPage() {
       await payAndConfirm(bookingId)
       await load()
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Payment failed")
+      if (err instanceof PaymentCancelledError) {
+        setActionError("Payment cancelled")
+      } else {
+        setActionError(err instanceof ApiError ? err.message : "Payment failed")
+      }
     } finally {
       setPayingId(null)
     }
@@ -119,7 +123,7 @@ export function BookingsPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-semibold tracking-tight">My bookings</h1>
         <p className="mt-2 text-muted-foreground">
-          Pay pending bookings to confirm your seat, or cancel to free the hold. Sandbox payment is demo-only.
+          Pay pending bookings to confirm your seat, or cancel to free the hold.
         </p>
       </div>
 

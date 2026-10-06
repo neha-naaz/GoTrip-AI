@@ -12,9 +12,11 @@ import com.tripflow.booking.entity.BookingStatus;
 import com.tripflow.booking.exception.BookingNotFoundException;
 import com.tripflow.booking.repository.BookingRepository;
 import com.tripflow.group.service.GroupMembershipService;
+import com.tripflow.payment.dto.ConfirmCheckoutRequest;
 import com.tripflow.payment.dto.PaymentResponse;
 import com.tripflow.payment.entity.Payment;
 import com.tripflow.payment.entity.PaymentStatus;
+import com.tripflow.payment.exception.InvalidPaymentSignatureException;
 import com.tripflow.payment.exception.PaymentNotAllowedException;
 import com.tripflow.payment.exception.PaymentNotFoundException;
 import com.tripflow.payment.provider.MockPaymentProvider;
@@ -209,5 +211,42 @@ class PaymentServiceTest {
     void handleWebhook_rejectsInvalidStatus() {
         assertThatThrownBy(() -> paymentService.handleWebhook("mock_abc", PaymentStatus.CREATED))
                 .isInstanceOf(PaymentNotAllowedException.class);
+    }
+
+    @Test
+    void confirmCheckout_rejectsMismatchedSignature() {
+        PaymentProvider razorpay = org.mockito.Mockito.mock(PaymentProvider.class);
+        paymentService = new PaymentService(
+                userRepository, bookingRepository, paymentRepository, razorpay, groupMembershipService);
+
+        User customer = customer(10L, "c@test.com");
+        Booking booking = Booking.builder()
+                .id(1L)
+                .userId(10L)
+                .status(BookingStatus.PENDING_PAYMENT)
+                .amountDue(new BigDecimal("3000.00"))
+                .build();
+        Payment payment = Payment.builder()
+                .id(9L)
+                .bookingId(1L)
+                .status(PaymentStatus.CREATED)
+                .providerRef("order_1")
+                .build();
+
+        when(userRepository.findByEmailAndRole("c@test.com", UserRole.CUSTOMER))
+                .thenReturn(Optional.of(customer));
+        when(bookingRepository.findByIdAndUserId(1L, 10L)).thenReturn(Optional.of(booking));
+        when(paymentRepository.findByProviderRef("order_1")).thenReturn(Optional.of(payment));
+        when(razorpay.verifyCheckoutSignature("order_1", "pay_1", "bad")).thenReturn(false);
+
+        ConfirmCheckoutRequest request = new ConfirmCheckoutRequest();
+        request.setOrderId("order_1");
+        request.setPaymentId("pay_1");
+        request.setSignature("bad");
+
+        assertThatThrownBy(() -> paymentService.confirmCheckout("c@test.com", 1L, request))
+                .isInstanceOf(InvalidPaymentSignatureException.class);
+
+        verify(paymentRepository, never()).save(any());
     }
 }

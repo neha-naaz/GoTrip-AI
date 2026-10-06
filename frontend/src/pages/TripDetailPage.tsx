@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { ArrowLeft, CalendarDays, Users } from "lucide-react"
+import { ArrowLeft, CalendarDays, MapPin, Users } from "lucide-react"
 import { createBooking } from "@/api/booking"
 import { ApiError } from "@/api/client"
 import { getTrip } from "@/api/trips"
@@ -98,8 +98,13 @@ export function TripDetailPage() {
         <h1 className="max-w-3xl text-3xl font-semibold tracking-tight text-white sm:text-5xl">
           {trip.title}
         </h1>
-        <p className="mt-3 text-base text-white/85">
-          {trip.source} → {trip.destination}
+        <p className="mt-4 inline-flex max-w-full flex-wrap items-center gap-2 rounded-full bg-black/45 px-3.5 py-2 text-sm font-semibold tracking-wide text-white shadow-sm ring-1 ring-white/25 backdrop-blur-sm sm:text-base">
+          <MapPin className="size-4 shrink-0 text-white" aria-hidden />
+          <span>{trip.source}</span>
+          <span className="text-white/70" aria-hidden>
+            →
+          </span>
+          <span>{trip.destination}</span>
         </p>
       </TripCoverCarousel>
 
@@ -186,6 +191,16 @@ export function TripDetailPage() {
           </p>
 
           <div className="mt-6 space-y-3 text-sm">
+            <p className="flex items-start gap-2 font-medium text-foreground">
+              <MapPin className="mt-0.5 size-4 shrink-0" />
+              <span>
+                {trip.source}
+                <span className="mx-1.5 text-muted-foreground" aria-hidden>
+                  →
+                </span>
+                {trip.destination}
+              </span>
+            </p>
             <p className="flex items-center gap-2 text-muted-foreground">
               <CalendarDays className="size-4 text-foreground" />
               {formatTripDateRange(trip.startDate, trip.endDate)}

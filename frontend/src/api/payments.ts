@@ -38,11 +38,19 @@ type RazorpaySuccess = {
 
 type RazorpayCheckout = {
   open: () => void
+  on: (event: string, handler: (response: unknown) => void) => void
 }
 
 declare global {
   interface Window {
     Razorpay?: new (options: Record<string, unknown>) => RazorpayCheckout
+  }
+}
+
+export class PaymentCancelledError extends Error {
+  constructor(message = "Payment cancelled") {
+    super(message)
+    this.name = "PaymentCancelledError"
   }
 }
 
@@ -69,8 +77,12 @@ function loadRazorpayScript(): Promise<boolean> {
 }
 
 async function openRazorpayCheckout(bookingId: number, payment: Payment): Promise<Payment> {
-  if (!payment.checkoutKeyId || payment.amountPaise == null || !payment.currency) {
+  const keyId = payment.checkoutKeyId || import.meta.env.VITE_RAZORPAY_KEY_ID
+  if (!keyId || payment.amountPaise == null || !payment.currency) {
     throw new Error("Checkout session incomplete")
+  }
+  if (payment.amountPaise < 100) {
+    throw new Error("Payment amount must be at least ₹1")
   }
 
   const ready = await loadRazorpayScript()
@@ -81,7 +93,7 @@ async function openRazorpayCheckout(bookingId: number, payment: Payment): Promis
   return new Promise((resolve, reject) => {
     let settled = false
     const rzp = new window.Razorpay!({
-      key: payment.checkoutKeyId,
+      key: keyId,
       amount: payment.amountPaise,
       currency: payment.currency,
       order_id: payment.providerRef,
@@ -100,10 +112,15 @@ async function openRazorpayCheckout(bookingId: number, payment: Payment): Promis
       modal: {
         ondismiss: () => {
           if (!settled) {
-            reject(new Error("Payment cancelled"))
+            reject(new PaymentCancelledError())
           }
         },
       },
+    })
+    rzp.on("payment.failed", (response: unknown) => {
+      settled = true
+      const failed = response as { error?: { description?: string } }
+      reject(new Error(failed.error?.description || "Payment failed"))
     })
     rzp.open()
   })
@@ -119,9 +136,13 @@ export async function payAndConfirm(bookingId: number): Promise<Payment> {
     return payment
   }
 
-  if (payment.provider === "RAZORPAY" && payment.checkoutKeyId) {
+  if (payment.provider === "RAZORPAY") {
     return openRazorpayCheckout(bookingId, payment)
   }
 
-  return sandboxConfirm(bookingId)
+  if (payment.provider === "MOCK") {
+    return sandboxConfirm(bookingId)
+  }
+
+  throw new Error(`Unsupported payment provider: ${payment.provider}`)
 }

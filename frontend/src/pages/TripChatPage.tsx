@@ -40,11 +40,9 @@ export function TripChatPage() {
       setBooting(true)
       setBootError(null)
       try {
-        const [tripData, group, members] = await Promise.all([
-          getTrip(id),
-          getTripGroup(id),
-          listGroupMembers(id),
-        ])
+        const tripData = await getTrip(id)
+        const group = await getTripGroup(id)
+        const members = await listGroupMembers(id)
         if (cancelled) return
         setTrip(tripData)
         setGroupId(group.id)
@@ -82,16 +80,22 @@ export function TripChatPage() {
     )
   }
 
+  const isAgency = user?.role === "AGENCY"
+  const backTo = isAgency ? "/agency/trips" : "/bookings"
+  const backLabel = isAgency ? "My trips" : "Bookings"
+
   if (bootError || !trip || !groupId) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6">
         <p className="text-lg font-medium">{bootError ?? "Chat unavailable"}</p>
         <p className="mt-2 text-sm text-muted-foreground">
-          Confirm your booking first, then return here.
+          {isAgency
+            ? "This chat opens for your published trip once the trip group is available."
+            : "Confirm your booking first, then return here."}
         </p>
-        <Button className="mt-6 rounded-2xl" render={<Link to="/bookings" />}>
+        <Button className="mt-6 rounded-2xl" render={<Link to={backTo} />}>
           <ArrowLeft className="size-4" />
-          My bookings
+          {backLabel}
         </Button>
       </div>
     )
@@ -102,11 +106,11 @@ export function TripChatPage() {
       <header className="flex items-start justify-between gap-3 border-b border-border py-4">
         <div>
           <Link
-            to="/bookings"
+            to={backTo}
             className="mb-2 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="size-3.5" />
-            Bookings
+            {backLabel}
           </Link>
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{trip.title}</h1>
           <p className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">

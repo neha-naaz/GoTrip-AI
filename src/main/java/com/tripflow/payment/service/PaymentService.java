@@ -9,6 +9,7 @@ import com.tripflow.payment.dto.ConfirmCheckoutRequest;
 import com.tripflow.payment.dto.PaymentResponse;
 import com.tripflow.payment.entity.Payment;
 import com.tripflow.payment.entity.PaymentStatus;
+import com.tripflow.payment.exception.InvalidPaymentSignatureException;
 import com.tripflow.payment.exception.PaymentNotAllowedException;
 import com.tripflow.payment.exception.PaymentNotFoundException;
 import com.tripflow.payment.provider.PaymentProvider;
@@ -128,7 +129,7 @@ public class PaymentService {
 
         if (!paymentProvider.verifyCheckoutSignature(
                 request.getOrderId(), request.getPaymentId(), request.getSignature())) {
-            throw new PaymentNotAllowedException("Invalid payment signature");
+            throw new InvalidPaymentSignatureException();
         }
 
         handleWebhook(request.getOrderId(), PaymentStatus.SUCCESS);

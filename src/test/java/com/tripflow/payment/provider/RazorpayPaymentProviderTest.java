@@ -43,6 +43,13 @@ class RazorpayPaymentProviderTest {
     void toPaise_convertsInr() {
         assertThat(RazorpayPaymentProvider.toPaise(new BigDecimal("3000.00"))).isEqualTo(300000L);
         assertThat(RazorpayPaymentProvider.toPaise(new BigDecimal("99.99"))).isEqualTo(9999L);
+        assertThat(RazorpayPaymentProvider.toPaise(new BigDecimal("1.00"))).isEqualTo(100L);
+    }
+
+    @Test
+    void toPaise_rejectsBelowMinimum() {
+        assertThatThrownBy(() -> RazorpayPaymentProvider.toPaise(new BigDecimal("0.99")))
+                .hasMessageContaining("100 paise");
     }
 
     @Test

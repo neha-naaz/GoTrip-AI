@@ -5,6 +5,9 @@ import com.tripflow.booking.exception.BookingNotFoundException;
 import com.tripflow.booking.exception.TripFullException;
 import com.tripflow.group.exception.NotGroupMemberException;
 import com.tripflow.group.exception.TripGroupNotFoundException;
+import com.tripflow.payment.exception.InvalidPaymentSignatureException;
+import com.tripflow.payment.exception.PaymentGatewayException;
+import com.tripflow.payment.exception.PaymentGatewayUnauthorizedException;
 import com.tripflow.payment.exception.PaymentNotAllowedException;
 import com.tripflow.payment.exception.PaymentNotFoundException;
 import com.tripflow.payment.exception.WebhookUnauthorizedException;
@@ -135,6 +138,22 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PaymentNotAllowedException.class)
     public ResponseEntity<ProblemDetail> handlePaymentNotAllowed(PaymentNotAllowedException exception) {
         return problem(HttpStatus.CONFLICT, "Payment not allowed", exception.getMessage());
+    }
+
+    @ExceptionHandler(InvalidPaymentSignatureException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidPaymentSignature(InvalidPaymentSignatureException exception) {
+        return problem(HttpStatus.BAD_REQUEST, "Invalid payment signature", exception.getMessage());
+    }
+
+    @ExceptionHandler(PaymentGatewayUnauthorizedException.class)
+    public ResponseEntity<ProblemDetail> handlePaymentGatewayUnauthorized(
+            PaymentGatewayUnauthorizedException exception) {
+        return problem(HttpStatus.UNAUTHORIZED, "Payment gateway unauthorized", exception.getMessage());
+    }
+
+    @ExceptionHandler(PaymentGatewayException.class)
+    public ResponseEntity<ProblemDetail> handlePaymentGateway(PaymentGatewayException exception) {
+        return problem(HttpStatus.INTERNAL_SERVER_ERROR, "Payment gateway error", exception.getMessage());
     }
 
     @ExceptionHandler(PaymentNotFoundException.class)

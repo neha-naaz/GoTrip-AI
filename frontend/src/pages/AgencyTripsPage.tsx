@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import { Pencil, Plus, Rocket, Trash2, Users } from "lucide-react"
+import { MessageCircle, Pencil, Plus, Rocket, Trash2, Users } from "lucide-react"
 import { ApiError } from "@/api/client"
 import { deleteAgencyTrip, listAgencyTrips, publishAgencyTrip } from "@/api/agencyTrips"
 import type { Trip } from "@/api/types"
@@ -194,6 +194,15 @@ export function AgencyTripsPage() {
                     >
                       <Users className="size-3.5" />
                       Travelers
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-2xl"
+                      render={<Link to={`/trips/${trip.id}/chat`} />}
+                    >
+                      <MessageCircle className="size-3.5" />
+                      Group chat
                     </Button>
                     <Button
                       variant="outline"
